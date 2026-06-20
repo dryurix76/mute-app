@@ -3,14 +3,28 @@ import { useState, useEffect } from "react";
 import { getInventario } from "../lib/inventarioApi";
 import { getVentas } from "../lib/ventasApi";
 import { getGastos } from "../lib/gastosApi";
+import { getSession, onAuthChange, signOut } from "../lib/authApi";
 import DashboardShell from "../components/DashboardShell";
+import LoginScreen from "../components/LoginScreen";
 
 export default function Page() {
-  const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [session, setSession] = useState(null);
+
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [ventas, setVentas] = useState([]);
   const [gastos, setGastos] = useState([]);
+
+  useEffect(() => {
+    getSession().then((s) => {
+      setSession(s);
+      setAuthChecked(true);
+    });
+    const subscription = onAuthChange((s) => setSession(s));
+    return () => subscription?.unsubscribe();
+  }, []);
 
   async function cargarTodo() {
     setLoading(true);
@@ -35,8 +49,20 @@ export default function Page() {
   }
 
   useEffect(() => {
-    cargarTodo();
-  }, []);
+    if (session) cargarTodo();
+  }, [session]);
+
+  if (!authChecked) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", fontFamily: "'DM Sans', sans-serif", color: "#6E6E6E" }}>
+        Verificando sesión...
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <LoginScreen onSuccess={() => {}} />;
+  }
 
   if (loading) {
     return (
@@ -67,6 +93,8 @@ export default function Page() {
       gastos={gastos}
       setGastos={setGastos}
       onRefresh={cargarTodo}
+      onSignOut={async () => { await signOut(); setSession(null); }}
+      userEmail={session.user.email}
     />
   );
 }

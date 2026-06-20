@@ -1,13 +1,14 @@
 "use client";
 import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
-import { G1, G2, MODELOS, PAGOS, PLATAFORMAS, EDAD_BRACKETS, edadBracket } from "../../lib/constants";
+import { G1, G2, MODELOS, PAGOS, PLATAFORMAS_FILTRO, REFERIDOS_FILTRO, EDAD_BRACKETS, edadBracket } from "../../lib/constants";
 
 export default function TabClientes({ st, fmt, ventas }) {
   const [search, setSearch] = useState("");
   const [filterEdad, setFilterEdad] = useState("all");
   const [filterPago, setFilterPago] = useState("all");
   const [filterPlataforma, setFilterPlataforma] = useState("all");
+  const [filterReferido, setFilterReferido] = useState("all");
 
   const clientes = useMemo(() => {
     const map = {};
@@ -17,7 +18,7 @@ export default function TabClientes({ st, fmt, ventas }) {
         map[key] = {
           id: key, nombre: v.comprador, telefono: v.telefono || "", correo: v.correo || "",
           ciudad: v.ciudad || "", edad: v.edad || "", compras: 0, totalGastado: 0, itemsComprados: 0,
-          pagos: new Set(), plataformas: new Set(), modelos: new Set(),
+          pagos: new Set(), plataformas: new Set(), modelos: new Set(), referidos: new Set(),
           primeraCompra: v.fecha, ultimaCompra: v.fecha,
         };
       }
@@ -27,6 +28,7 @@ export default function TabClientes({ st, fmt, ventas }) {
       c.itemsComprados += v.items || 1;
       c.pagos.add(v.pago);
       c.plataformas.add(v.plataforma);
+      if (v.referido) c.referidos.add(v.referido);
       const modeloNombre = MODELOS.find((m) => m.id === v.modelo)?.nombre;
       if (modeloNombre) c.modelos.add(modeloNombre);
       if (v.fecha < c.primeraCompra) c.primeraCompra = v.fecha;
@@ -36,23 +38,24 @@ export default function TabClientes({ st, fmt, ventas }) {
       if (v.ciudad) c.ciudad = v.ciudad;
       if (v.edad) c.edad = v.edad;
     });
-    return Object.values(map).map((c) => ({ ...c, pagos: Array.from(c.pagos), plataformas: Array.from(c.plataformas), modelos: Array.from(c.modelos) }));
+    return Object.values(map).map((c) => ({ ...c, pagos: Array.from(c.pagos), plataformas: Array.from(c.plataformas), modelos: Array.from(c.modelos), referidos: Array.from(c.referidos) }));
   }, [ventas]);
 
   const filteredClientes = useMemo(() => clientes.filter((c) => {
     if (filterEdad !== "all" && edadBracket(c.edad) !== filterEdad) return false;
     if (filterPago !== "all" && !c.pagos.includes(filterPago)) return false;
     if (filterPlataforma !== "all" && !c.plataformas.includes(filterPlataforma)) return false;
+    if (filterReferido !== "all" && !c.referidos.includes(filterReferido)) return false;
     if (search) {
       const q = search.toLowerCase();
       const haystack = [c.nombre, c.telefono, c.correo, c.ciudad, c.edad, ...c.modelos].filter(Boolean).join(" ").toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     return true;
-  }).sort((a, b) => b.totalGastado - a.totalGastado), [clientes, search, filterEdad, filterPago, filterPlataforma]);
+  }).sort((a, b) => b.totalGastado - a.totalGastado), [clientes, search, filterEdad, filterPago, filterPlataforma, filterReferido]);
 
-  const filtersActive = search || filterEdad !== "all" || filterPago !== "all" || filterPlataforma !== "all";
-  const clearFilters = () => { setSearch(""); setFilterEdad("all"); setFilterPago("all"); setFilterPlataforma("all"); };
+  const filtersActive = search || filterEdad !== "all" || filterPago !== "all" || filterPlataforma !== "all" || filterReferido !== "all";
+  const clearFilters = () => { setSearch(""); setFilterEdad("all"); setFilterPago("all"); setFilterPlataforma("all"); setFilterReferido("all"); };
   const clientesRecurrentes = clientes.filter((c) => c.compras > 1).length;
   const ticketPromedio = clientes.length ? clientes.reduce((s, c) => s + c.totalGastado, 0) / clientes.length : 0;
 
@@ -108,7 +111,11 @@ export default function TabClientes({ st, fmt, ventas }) {
           </select>
           <select style={{ ...st.sel, width: 170 }} value={filterPlataforma} onChange={(e) => setFilterPlataforma(e.target.value)}>
             <option value="all">Plataforma: Todas</option>
-            {PLATAFORMAS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {PLATAFORMAS_FILTRO.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <select style={{ ...st.sel, width: 170 }} value={filterReferido} onChange={(e) => setFilterReferido(e.target.value)}>
+            <option value="all">Referido: Todos</option>
+            {REFERIDOS_FILTRO.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
           {filtersActive && <button style={st.btnSm()} onClick={clearFilters}>✕ Limpiar</button>}
           <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>

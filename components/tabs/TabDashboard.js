@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Y, B, G1, G2, MODELOS, PLATAFORMAS } from "../../lib/constants";
 
@@ -27,6 +28,27 @@ export default function TabDashboard({ st, fmt, inventory, ventas, disponibles, 
             <div style={{ fontSize: 12, color: G1 }}>{s.sub}</div>
           </div>
         ))}
+      </div>
+
+      <div style={st.card}>
+        <div style={st.sTitle}>Catálogo — Cápsula 001</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 14 }}>
+          {MODELOS.map((m) => {
+            const sold = ventas.filter((v) => v.modelo === m.id).length;
+            const avail = inventory.filter((i) => i.modelo === m.id).length - sold;
+            return (
+              <div key={m.id} style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #e5e5e0" }}>
+                <div style={{ position: "relative", width: "100%", height: 160, background: "#f0f0ec" }}>
+                  <Image src={m.img} alt={m.nombre} fill style={{ objectFit: "cover" }} sizes="200px" />
+                </div>
+                <div style={{ padding: "8px 10px" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{m.nombre}</div>
+                  <div style={{ fontSize: 11, color: G1, marginTop: 2 }}>{avail} disponibles</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div style={st.grid2}>

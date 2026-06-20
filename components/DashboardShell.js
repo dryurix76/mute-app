@@ -2,6 +2,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Y, B, G1, G2 } from "../lib/constants";
 import { buildStyles } from "../lib/styles";
+import { getTasaBCV } from "../lib/bcvApi";
+import { getPerfiles } from "../lib/authApi";
 import {
   crearPrendaInventario,
   actualizarPrendaInventario,
@@ -38,13 +40,58 @@ export default function DashboardShell({
   ventas, setVentas,
   gastos, setGastos,
   onRefresh,
+  onSignOut, userEmail,
 }) {
   const [tab, setTab] = useState("dashboard");
   const [vw, setVw] = useState(typeof window !== "undefined" ? window.innerWidth : 1280);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState("Cori");
+  const [currentUser, setCurrentUser] = useState("");
+  const [perfiles, setPerfiles] = useState([]);
+  const [perfilesLoading, setPerfilesLoading] = useState(true);
+
+  async function cargarPerfiles() {
+    setPerfilesLoading(true);
+    try {
+      const data = await getPerfiles();
+      setPerfiles(data);
+      const propio = data.find((p) => p.correo === userEmail);
+      setCurrentUser(propio ? propio.nombre : (data[0]?.nombre || ""));
+    } catch (e) {
+      console.error("Error cargando perfiles:", e);
+    } finally {
+      setPerfilesLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    cargarPerfiles();
+  }, []);
   const [currency, setCurrency] = useState("USD");
   const [exchangeRate, setExchangeRate] = useState(180);
+  const [bcvFecha, setBcvFecha] = useState(null);
+  const [bcvLoading, setBcvLoading] = useState(false);
+  const [bcvError, setBcvError] = useState(false);
+
+  async function cargarTasaBCV() {
+    setBcvLoading(true);
+    setBcvError(false);
+    try {
+      const tasa = await getTasaBCV();
+      if (tasa.usd) {
+        setExchangeRate(Number(tasa.usd.toFixed(2)));
+        setBcvFecha(tasa.fecha);
+      }
+    } catch (e) {
+      console.error("No se pudo cargar la tasa BCV:", e);
+      setBcvError(true);
+    } finally {
+      setBcvLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    cargarTasaBCV();
+  }, []);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -232,12 +279,16 @@ export default function DashboardShell({
           ))}
         </nav>
         <div style={{ padding: "16px 24px", borderTop: "1px solid #222" }}>
-          {["Cori", "Adri"].map((v) => (
-            <div key={v} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, cursor: "pointer", opacity: currentUser === v ? 1 : 0.5 }} onClick={() => setCurrentUser(v)}>
-              <div style={{ width: 24, height: 24, borderRadius: "50%", background: Y, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: B }}>{v[0]}</div>
-              <span style={{ fontSize: 12, color: currentUser === v ? "#fff" : "#aaa", fontWeight: currentUser === v ? 700 : 400 }}>{v}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: Y, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: B }}>{currentUser ? currentUser[0] : "?"}</div>
+            <div>
+              <div style={{ fontSize: 13, color: "#fff", fontWeight: 700 }}>{currentUser || "Cargando..."}</div>
+              <div style={{ fontSize: 10, color: "#888" }}>{userEmail}</div>
             </div>
-          ))}
+          </div>
+          <button onClick={onSignOut} style={{ width: "100%", padding: "7px", borderRadius: 6, border: "1px solid #333", background: "none", color: "#aaa", fontSize: 12, cursor: "pointer" }}>
+            Cerrar sesión
+          </button>
         </div>
       </div>
 
@@ -256,7 +307,14 @@ export default function DashboardShell({
             <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#1a1a1a", borderRadius: 6, padding: "4px 6px" }}>
               <button style={{ padding: "5px 10px", borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none", background: currency === "USD" ? Y : "transparent", color: currency === "USD" ? B : "#aaa" }} onClick={() => setCurrency("USD")}>USD $</button>
               <button style={{ padding: "5px 10px", borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none", background: currency === "BS" ? Y : "transparent", color: currency === "BS" ? B : "#aaa" }} onClick={() => setCurrency("BS")}>Bs</button>
-              {currency === "BS" && <input type="number" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value) || 0)} style={{ width: 60, padding: "4px 6px", borderRadius: 4, border: "none", fontSize: 11, background: "#333", color: "#fff" }} />}
+              {currency === "BS" && (
+                <>
+                  <input type="number" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value) || 0)} style={{ width: 60, padding: "4px 6px", borderRadius: 4, border: "none", fontSize: 11, background: "#333", color: "#fff" }} title={bcvFecha ? `Tasa BCV del ${bcvFecha}` : "Tasa manual"} />
+                  <button onClick={cargarTasaBCV} title="Actualizar tasa BCV" style={{ background: "none", border: "none", color: bcvError ? "#e87a7a" : "#7dd8c0", fontSize: 12, cursor: "pointer", padding: "0 4px" }}>
+                    {bcvLoading ? "..." : "🏦"}
+                  </button>
+                </>
+              )}
             </div>
             <button onClick={onRefresh} title="Recargar datos desde la base de datos" style={{ background: "none", border: "1px solid #333", borderRadius: 6, color: "#fff", fontSize: 13, cursor: "pointer", padding: "6px 10px" }}>\u21bb</button>
             <button style={st.btn(true)} onClick={openNewVenta}>{isMobile ? "+ Venta" : "+ Registrar Venta"}</button>
@@ -283,7 +341,19 @@ export default function DashboardShell({
             <TabGastos {...sharedProps} onNew={openNewGasto} onEdit={openEditGasto} onDelete={(g) => setConfirmDelete({ type: "gasto", id: g.id, label: "\u00bfEliminar este gasto?" })} />
           )}
           {tab === "estadisticas" && <TabEstadisticas {...sharedProps} />}
-          {tab === "perfil" && <TabPerfil {...sharedProps} currentUser={currentUser} setCurrentUser={setCurrentUser} currency={currency} setCurrency={setCurrency} exchangeRate={exchangeRate} setExchangeRate={setExchangeRate} />}
+          {tab === "perfil" && (
+            <TabPerfil
+              {...sharedProps}
+              currentUser={currentUser}
+              perfiles={perfiles}
+              userEmail={userEmail}
+              currency={currency} setCurrency={setCurrency}
+              exchangeRate={exchangeRate} setExchangeRate={setExchangeRate}
+              bcvFecha={bcvFecha} bcvLoading={bcvLoading} bcvError={bcvError}
+              onRefreshBcv={cargarTasaBCV}
+              onRefreshPerfiles={cargarPerfiles}
+            />
+          )}
         </div>
       </div>
 

@@ -29,7 +29,7 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
   function exportInvExcel() {
     const rows = filteredInv.map((i) => ({
       Codigo: i.codigo, Modelo: i.nombre, Talla: i.talla, Drop: i.drop || "DROP 001",
-      Status: vendidas.includes(i.codigo) ? "VENDIDA" : "DISPONIBLE",
+      Status: vendidas.includes(i.codigo) ? "NO DISPONIBLE" : "DISPONIBLE",
       "Precio Costo": i.precio_costo, "Precio Venta": i.precio_venta,
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -39,7 +39,7 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
   }
 
   function exportInvPDF() {
-    const rows = filteredInv.map((i) => `<tr><td>${i.codigo}</td><td>${i.nombre}</td><td>${i.talla}</td><td>${i.drop || "DROP 001"}</td><td>${vendidas.includes(i.codigo) ? "VENDIDA" : "DISPONIBLE"}</td><td>$${i.precio_costo}</td><td>$${i.precio_venta}</td></tr>`).join("");
+    const rows = filteredInv.map((i) => `<tr><td>${i.codigo}</td><td>${i.nombre}</td><td>${i.talla}</td><td>${i.drop || "DROP 001"}</td><td>${vendidas.includes(i.codigo) ? "NO DISPONIBLE" : "DISPONIBLE"}</td><td>$${i.precio_costo}</td><td>$${i.precio_venta}</td></tr>`).join("");
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>mute. Inventario</title><style>body{font-family:'Helvetica Neue',Arial,sans-serif;padding:24px}table{width:100%;border-collapse:collapse;font-size:11px;margin-top:16px}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}th{background:#000;color:#FFF200;text-transform:uppercase;font-size:10px}</style></head><body><h1>mute. — Reporte de Inventario</h1><p>${filteredInv.length} prendas</p><table><thead><tr><th>Código</th><th>Modelo</th><th>Talla</th><th>Drop</th><th>Status</th><th>P.Costo</th><th>P.Venta</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
     const w = window.open("", "_blank");
     if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 300); }
@@ -71,7 +71,7 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
         <select style={{ ...st.sel, width: 150 }} value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setInvPage(1); }}>
           <option value="all">Todos</option>
           <option value="disponible">Disponible</option>
-          <option value="vendida">Vendida</option>
+          <option value="vendida">No Disponible</option>
         </select>
         <select style={{ ...st.sel, width: 130 }} value={invPerPage} onChange={(e) => { const v = e.target.value; setInvPerPage(v === "Todos" ? "Todos" : Number(v)); setInvPage(1); }}>
           {PAGE_SIZES.map((p) => <option key={p} value={p}>{p === "Todos" ? "Todos" : `${p} / página`}</option>)}
@@ -105,7 +105,7 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
                     <td style={st.td}>{i.nombre}</td>
                     <td style={st.td}><strong>{i.talla}</strong></td>
                     <td style={st.td}>{i.drop || "DROP 001"}</td>
-                    <td style={st.td}><span style={st.badge(sold)}>{sold ? "VENDIDA" : "DISPONIBLE"}</span></td>
+                    <td style={st.td}><span style={st.badge(sold)}>{sold ? "NO DISPONIBLE" : "DISPONIBLE"}</span></td>
                     <td style={st.td}>{fmt(i.precio_costo)}</td>
                     <td style={st.td}><strong>{fmt(i.precio_venta)}</strong></td>
                     <td style={st.td}>

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
-import { G1, G2, MODELOS, PAGOS, PLATAFORMAS, REFERIDOS, DELIVERY } from "../../lib/constants";
+import { G1, G2, MODELOS, PAGOS, PLATAFORMAS_FILTRO, REFERIDOS_FILTRO, DELIVERY } from "../../lib/constants";
 
 export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDelete }) {
   const [search, setSearch] = useState("");
@@ -90,7 +90,7 @@ export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDe
           </select>
           <select style={{ ...st.sel, width: 150 }} value={filterPlataforma} onChange={(e) => setFilterPlataforma(e.target.value)}>
             <option value="all">Plataforma: Todas</option>
-            {PLATAFORMAS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {PLATAFORMAS_FILTRO.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
           <select style={{ ...st.sel, width: 150 }} value={filterPago} onChange={(e) => setFilterPago(e.target.value)}>
             <option value="all">Pago: Todos</option>
@@ -98,7 +98,7 @@ export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDe
           </select>
           <select style={{ ...st.sel, width: 170 }} value={filterReferido} onChange={(e) => setFilterReferido(e.target.value)}>
             <option value="all">Referido: Todos</option>
-            {REFERIDOS.map((r) => <option key={r} value={r}>{r}</option>)}
+            {REFERIDOS_FILTRO.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
           <select style={{ ...st.sel, width: 160 }} value={filterDelivery} onChange={(e) => setFilterDelivery(e.target.value)}>
             <option value="all">Delivery: Todos</option>
