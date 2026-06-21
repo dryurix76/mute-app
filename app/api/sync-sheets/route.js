@@ -17,6 +17,33 @@ const MODELO_MAP = {
   "MOSCOW MULE": "moscowmule",
 };
 
+// Corrige errores de tipeo comunes en el código de prenda, donde una letra
+// del prefijo queda repetida sin querer (ej. "MEM01" en vez de "ME01",
+// "MMM05" en vez de "MM05"). Se basa en los prefijos reales de cada modelo.
+const PREFIJOS_VALIDOS = { cosmopolitan: "MC", espressomartini: "ME", cubalibre: "MCL", negroni: "MN", moscowmule: "MM" };
+
+function normalizaCodigo(codigoRaw, modeloId) {
+  if (!codigoRaw) return codigoRaw;
+  const codigo = codigoRaw.toString().trim().toUpperCase();
+  const prefijoCorrecto = PREFIJOS_VALIDOS[modeloId];
+  if (!prefijoCorrecto) return codigo;
+
+  const match = codigo.match(/^([A-Z]+)(\d+)$/);
+  if (!match) return codigo;
+  const [, letras, numero] = match;
+
+  // Si el bloque de letras ya es exactamente el prefijo correcto, no tocar.
+  if (letras === prefijoCorrecto) return codigo;
+
+  // Si el bloque de letras empieza con el prefijo correcto pero tiene
+  // letras extra repetidas (ej "MEM" para prefijo "ME"), recorta al prefijo.
+  if (letras.startsWith(prefijoCorrecto) && letras.length > prefijoCorrecto.length) {
+    return prefijoCorrecto + numero;
+  }
+
+  return codigo;
+}
+
 function normalizaModelo(raw) {
   if (!raw) return null;
   const key = raw.toString().trim().toUpperCase();
@@ -116,8 +143,8 @@ function filasAVentas(rows) {
     const row = rows[r];
     if (!row || !row[iCodigo]) continue;
 
-    const codigo = row[iCodigo].toString().trim();
     const modelo = normalizaModelo(row[iModelo]);
+    const codigo = normalizaCodigo(row[iCodigo].toString().trim(), modelo);
     const talla = (row[iTalla] || "").toString().trim().toUpperCase();
     const precioCosto = parseMonto(row[iCosto]);
     const precioVenta = parseMonto(row[iPrecio]);
