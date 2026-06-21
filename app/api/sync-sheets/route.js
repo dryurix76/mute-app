@@ -88,12 +88,12 @@ function filasAVentas(rows) {
 
   const headerRowIndex = encuentraFilaHeaders(rows);
   const headers = rows[headerRowIndex].map((h) => h.toString().trim().toUpperCase());
-  const idx = (name) => headers.indexOf(name);
+  const idx = (name) => headers.findIndex((h) => h.startsWith(name));
 
   const iCodigo = idx("CODIG");
   const iModelo = idx("MODELO");
   const iTalla = idx("TALLA");
-  const iCosto = idx("COSTO UNIT.");
+  const iCosto = idx("COSTO UNIT");
   const iPrecio = idx("PRECIO VENTA");
   const iCliente = idx("CLIENTE");
   const iPago = idx("METODO DE PAGO");
