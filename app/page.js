@@ -16,6 +16,7 @@ export default function Page() {
   const [inventory, setInventory] = useState([]);
   const [ventas, setVentas] = useState([]);
   const [gastos, setGastos] = useState([]);
+  const [syncMsg, setSyncMsg] = useState("");
 
   useEffect(() => {
     getSession().then((s) => {
@@ -25,6 +26,27 @@ export default function Page() {
     const subscription = onAuthChange((s) => setSession(s));
     return () => subscription?.unsubscribe();
   }, []);
+
+  async function sincronizarGoogleSheets() {
+    setSyncMsg("Sincronizando con Google Sheets...");
+    try {
+      const res = await fetch("/api/sync-sheets", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        setSyncMsg(
+          data.ventasNuevas > 0
+            ? `${data.ventasNuevas} venta(s) nueva(s) importadas desde Google Sheets.`
+            : "Sincronizado con Google Sheets — sin cambios nuevos."
+        );
+      } else {
+        setSyncMsg("No se pudo sincronizar con Google Sheets: " + data.error);
+      }
+    } catch (e) {
+      setSyncMsg("No se pudo sincronizar con Google Sheets.");
+    } finally {
+      setTimeout(() => setSyncMsg(""), 5000);
+    }
+  }
 
   async function cargarTodo() {
     setLoading(true);
@@ -49,7 +71,9 @@ export default function Page() {
   }
 
   useEffect(() => {
-    if (session) cargarTodo();
+    if (session) {
+      sincronizarGoogleSheets().then(() => cargarTodo());
+    }
   }, [session]);
 
   if (!authChecked) {
@@ -95,6 +119,8 @@ export default function Page() {
       onRefresh={cargarTodo}
       onSignOut={async () => { await signOut(); setSession(null); }}
       userEmail={session.user.email}
+      syncMsg={syncMsg}
+      onSyncSheets={async () => { await sincronizarGoogleSheets(); await cargarTodo(); }}
     />
   );
 }

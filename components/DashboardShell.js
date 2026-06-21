@@ -41,6 +41,7 @@ export default function DashboardShell({
   gastos, setGastos,
   onRefresh,
   onSignOut, userEmail,
+  syncMsg, onSyncSheets,
 }) {
   const [tab, setTab] = useState("dashboard");
   const [vw, setVw] = useState(typeof window !== "undefined" ? window.innerWidth : 1280);
@@ -317,9 +318,16 @@ export default function DashboardShell({
               )}
             </div>
             <button onClick={onRefresh} title="Recargar datos desde la base de datos" style={{ background: "none", border: "1px solid #333", borderRadius: 6, color: "#fff", fontSize: 13, cursor: "pointer", padding: "6px 10px" }}>\u21bb</button>
+            <button onClick={onSyncSheets} title="Sincronizar ventas desde Google Sheets" style={{ background: "none", border: "1px solid #333", borderRadius: 6, color: "#fff", fontSize: 13, cursor: "pointer", padding: "6px 10px" }}>📋</button>
             <button style={st.btn(true)} onClick={openNewVenta}>{isMobile ? "+ Venta" : "+ Registrar Venta"}</button>
           </div>
         </div>
+
+        {syncMsg && (
+          <div style={{ background: "#1a1a1a", color: "#7dd8c0", fontSize: 12, padding: "8px 32px", textAlign: "center" }}>
+            {syncMsg}
+          </div>
+        )}
 
         <div style={st.content}>
           {busy && (
