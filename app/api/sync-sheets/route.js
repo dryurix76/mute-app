@@ -159,6 +159,14 @@ async function sincronizar() {
   const rows = await leerSheet();
   const { inventario, ventas, debug } = filasAVentas(rows);
 
+  // Trae los códigos que ya existen en INVENTARIO (la tabla ventas exige que
+  // el código exista ahí primero, por la relación foreign key)
+  const { data: inventarioExistente, error: errInvExist } = await supabaseAdmin
+    .from("inventario")
+    .select("codigo");
+  if (errInvExist) throw errInvExist;
+  const codigosEnInventario = new Set((inventarioExistente || []).map((i) => i.codigo.trim().toUpperCase()));
+
   // Trae los códigos que ya existen como venta para no duplicar
   const { data: ventasExistentes, error: errVentasExist } = await supabaseAdmin
     .from("ventas")
@@ -166,13 +174,21 @@ async function sincronizar() {
   if (errVentasExist) throw errVentasExist;
   const codigosYaVendidos = new Set((ventasExistentes || []).map((v) => v.codigo));
 
-  const ventasNuevas = ventas.filter((v) => !codigosYaVendidos.has(v.codigo));
+  const ventasCandidatas = ventas.filter((v) => !codigosYaVendidos.has(v.codigo));
+
+  // Separa las que SÍ tienen un código válido en inventario de las que NO
+  const ventasNuevas = ventasCandidatas.filter((v) => codigosEnInventario.has(v.codigo.trim().toUpperCase()));
+  const ventasSinInventario = ventasCandidatas.filter((v) => !codigosEnInventario.has(v.codigo.trim().toUpperCase()));
 
   let ventasInsertadas = 0;
+  let errorInsert = null;
   if (ventasNuevas.length > 0) {
     const { error: errInsert } = await supabaseAdmin.from("ventas").insert(ventasNuevas);
-    if (errInsert) throw errInsert;
-    ventasInsertadas = ventasNuevas.length;
+    if (errInsert) {
+      errorInsert = errInsert.message;
+    } else {
+      ventasInsertadas = ventasNuevas.length;
+    }
   }
 
   // Actualiza precios de inventario si cambiaron en el Sheet (no crea prendas nuevas
@@ -193,6 +209,10 @@ async function sincronizar() {
     ventasNuevas: ventasInsertadas,
     inventarioRevisado: inventario.length,
     codigosYaVendidosEnBD: codigosYaVendidos.size,
+    codigosEnInventarioBD: codigosEnInventario.size,
+    ventasSinInventarioCount: ventasSinInventario.length,
+    codigosSinInventario: ventasSinInventario.map((v) => v.codigo),
+    errorInsert,
     debug,
   };
 }
