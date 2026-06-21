@@ -71,7 +71,7 @@ async function leerSheet() {
 }
 
 function filasAVentas(rows) {
-  if (rows.length < 2) return [];
+  if (rows.length < 2) return { inventario: [], ventas: [], debug: { error: "El Sheet tiene menos de 2 filas" } };
   const headers = rows[0].map((h) => h.toString().trim().toUpperCase());
   const idx = (name) => headers.indexOf(name);
 
@@ -85,6 +85,13 @@ function filasAVentas(rows) {
   const iEstadoPago = idx("ESTADO DE PAGO");
   const iTotal = idx("TOTAL VENTA");
   const iObs = idx("OBSERVACIONES");
+
+  const debug = {
+    headersEncontrados: headers,
+    indices: { iCodigo, iModelo, iTalla, iCosto, iPrecio, iCliente, iPago, iEstadoPago, iTotal, iObs },
+    totalFilas: rows.length - 1,
+    primeraFilaEjemplo: rows[1] || null,
+  };
 
   const inventario = [];
   const ventas = [];
@@ -120,55 +127,77 @@ function filasAVentas(rows) {
     }
   }
 
-  return { inventario, ventas };
+  debug.inventarioContado = inventario.length;
+  debug.ventasDetectadas = ventas.length;
+  debug.ejemploVenta = ventas[0] || null;
+
+  return { inventario, ventas, debug };
+}
+
+async function sincronizar() {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+
+  const rows = await leerSheet();
+  const { inventario, ventas, debug } = filasAVentas(rows);
+
+  // Trae los códigos que ya existen como venta para no duplicar
+  const { data: ventasExistentes, error: errVentasExist } = await supabaseAdmin
+    .from("ventas")
+    .select("codigo");
+  if (errVentasExist) throw errVentasExist;
+  const codigosYaVendidos = new Set((ventasExistentes || []).map((v) => v.codigo));
+
+  const ventasNuevas = ventas.filter((v) => !codigosYaVendidos.has(v.codigo));
+
+  let ventasInsertadas = 0;
+  if (ventasNuevas.length > 0) {
+    const { error: errInsert } = await supabaseAdmin.from("ventas").insert(ventasNuevas);
+    if (errInsert) throw errInsert;
+    ventasInsertadas = ventasNuevas.length;
+  }
+
+  // Actualiza precios de inventario si cambiaron en el Sheet (no crea prendas nuevas
+  // para evitar duplicar códigos si el Sheet tiene variaciones de formato)
+  let inventarioActualizado = 0;
+  for (const item of inventario) {
+    if (!item.codigo) continue;
+    const { error: errUpdate } = await supabaseAdmin
+      .from("inventario")
+      .update({ precio_costo: item.precio_costo, precio_venta: item.precio_venta })
+      .eq("codigo", item.codigo);
+    if (!errUpdate) inventarioActualizado += 1;
+  }
+
+  return {
+    ok: true,
+    filasLeidas: rows.length - 1,
+    ventasNuevas: ventasInsertadas,
+    inventarioRevisado: inventario.length,
+    codigosYaVendidosEnBD: codigosYaVendidos.size,
+    debug,
+  };
 }
 
 export async function POST() {
   try {
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
-    const rows = await leerSheet();
-    const { inventario, ventas } = filasAVentas(rows);
-
-    // Trae los códigos que ya existen como venta para no duplicar
-    const { data: ventasExistentes, error: errVentasExist } = await supabaseAdmin
-      .from("ventas")
-      .select("codigo");
-    if (errVentasExist) throw errVentasExist;
-    const codigosYaVendidos = new Set((ventasExistentes || []).map((v) => v.codigo));
-
-    const ventasNuevas = ventas.filter((v) => !codigosYaVendidos.has(v.codigo));
-
-    let ventasInsertadas = 0;
-    if (ventasNuevas.length > 0) {
-      const { error: errInsert } = await supabaseAdmin.from("ventas").insert(ventasNuevas);
-      if (errInsert) throw errInsert;
-      ventasInsertadas = ventasNuevas.length;
-    }
-
-    // Actualiza precios de inventario si cambiaron en el Sheet (no crea prendas nuevas
-    // para evitar duplicar códigos si el Sheet tiene variaciones de formato)
-    let inventarioActualizado = 0;
-    for (const item of inventario) {
-      if (!item.codigo) continue;
-      const { error: errUpdate, count } = await supabaseAdmin
-        .from("inventario")
-        .update({ precio_costo: item.precio_costo, precio_venta: item.precio_venta }, { count: "exact" })
-        .eq("codigo", item.codigo);
-      if (!errUpdate) inventarioActualizado += 1;
-    }
-
-    return Response.json({
-      ok: true,
-      filasLeidas: rows.length - 1,
-      ventasNuevas: ventasInsertadas,
-      inventarioRevisado: inventario.length,
-    });
+    const resultado = await sincronizar();
+    return Response.json(resultado);
   } catch (e) {
     console.error("Error sincronizando con Google Sheets:", e);
-    return Response.json({ ok: false, error: e.message }, { status: 500 });
+    return Response.json({ ok: false, error: e.message, stack: e.stack }, { status: 500 });
+  }
+}
+
+// Permite probar visitando la URL directo en el navegador, para depurar
+export async function GET() {
+  try {
+    const resultado = await sincronizar();
+    return Response.json(resultado);
+  } catch (e) {
+    console.error("Error sincronizando con Google Sheets:", e);
+    return Response.json({ ok: false, error: e.message, stack: e.stack }, { status: 500 });
   }
 }
