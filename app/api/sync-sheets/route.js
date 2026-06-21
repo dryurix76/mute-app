@@ -70,9 +70,24 @@ async function leerSheet() {
   return data.values || [];
 }
 
+function encuentraFilaHeaders(rows) {
+  // Busca la primera fila que contenga "CODIG" en alguna celda — esa es la fila real
+  // de encabezados. Esto evita romperse si hay una fila de título/instrucciones antes.
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const row = rows[i] || [];
+    const upper = row.map((c) => (c || "").toString().trim().toUpperCase());
+    if (upper.some((c) => c.startsWith("CODIG"))) {
+      return i;
+    }
+  }
+  return 0; // fallback: si no encuentra nada, usa la fila 1 como antes
+}
+
 function filasAVentas(rows) {
   if (rows.length < 2) return { inventario: [], ventas: [], debug: { error: "El Sheet tiene menos de 2 filas" } };
-  const headers = rows[0].map((h) => h.toString().trim().toUpperCase());
+
+  const headerRowIndex = encuentraFilaHeaders(rows);
+  const headers = rows[headerRowIndex].map((h) => h.toString().trim().toUpperCase());
   const idx = (name) => headers.indexOf(name);
 
   const iCodigo = idx("CODIG");
@@ -87,16 +102,17 @@ function filasAVentas(rows) {
   const iObs = idx("OBSERVACIONES");
 
   const debug = {
+    headerRowIndex,
     headersEncontrados: headers,
     indices: { iCodigo, iModelo, iTalla, iCosto, iPrecio, iCliente, iPago, iEstadoPago, iTotal, iObs },
-    totalFilas: rows.length - 1,
-    primeraFilaEjemplo: rows[1] || null,
+    totalFilas: rows.length - headerRowIndex - 1,
+    primeraFilaEjemplo: rows[headerRowIndex + 1] || null,
   };
 
   const inventario = [];
   const ventas = [];
 
-  for (let r = 1; r < rows.length; r++) {
+  for (let r = headerRowIndex + 1; r < rows.length; r++) {
     const row = rows[r];
     if (!row || !row[iCodigo]) continue;
 
