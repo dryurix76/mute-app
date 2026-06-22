@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { G1, G2 } from "../../lib/constants";
-import { updatePassword, actualizarPerfil } from "../../lib/authApi";
+import { updatePassword, updateEmail, actualizarPerfil } from "../../lib/authApi";
 
 export default function TabPerfil({
   st, currentUser, perfiles, userEmail,
@@ -14,11 +14,14 @@ export default function TabPerfil({
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState("");
 
-  const [pwActual, setPwActual] = useState("");
   const [pwNueva, setPwNueva] = useState("");
   const [pwConfirmar, setPwConfirmar] = useState("");
   const [pwMsg, setPwMsg] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
+
+  const [nuevoCorreo, setNuevoCorreo] = useState("");
+  const [correoMsg, setCorreoMsg] = useState("");
+  const [correoSaving, setCorreoSaving] = useState(false);
 
   async function handleGuardarPerfil() {
     setSavingProfile(true);
@@ -43,12 +46,27 @@ export default function TabPerfil({
     try {
       await updatePassword(pwNueva);
       setPwMsg("Contraseña actualizada ✓");
-      setPwActual(""); setPwNueva(""); setPwConfirmar("");
+      setPwNueva(""); setPwConfirmar("");
     } catch (e) {
       setPwMsg("Error: " + e.message);
     } finally {
       setPwSaving(false);
-      setTimeout(() => setPwMsg(""), 3000);
+      setTimeout(() => setPwMsg(""), 4000);
+    }
+  }
+
+  async function handleCambiarCorreo() {
+    setCorreoMsg("");
+    if (!nuevoCorreo || !nuevoCorreo.includes("@")) { setCorreoMsg("Ingresa un correo válido."); return; }
+    setCorreoSaving(true);
+    try {
+      await updateEmail(nuevoCorreo);
+      setCorreoMsg("✓ Se enviaron links de confirmación al correo actual y al nuevo. El cambio aplica al confirmar ambos.");
+      setNuevoCorreo("");
+    } catch (e) {
+      setCorreoMsg("Error: " + e.message);
+    } finally {
+      setCorreoSaving(false);
     }
   }
 
@@ -89,6 +107,28 @@ export default function TabPerfil({
             <button style={st.btn(true)} onClick={handleCambiarPassword} disabled={pwSaving}>{pwSaving ? "Actualizando..." : "Actualizar Contraseña"}</button>
             {pwMsg && <span style={{ fontSize: 12, color: pwMsg.includes("Error") || pwMsg.includes("no coinciden") || pwMsg.includes("al menos") ? "#b30000" : "#1a7a1a", fontWeight: 600 }}>{pwMsg}</span>}
           </div>
+        </div>
+      </div>
+
+      <div style={{ ...st.card, marginBottom: 20 }}>
+        <div style={st.sTitle}>Cambiar Correo</div>
+        <div style={{ fontSize: 12, color: "#6E6E6E", marginBottom: 14 }}>
+          Correo actual: <strong>{userEmail}</strong>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={st.fLabel}>Nuevo correo</label>
+          <input type="email" style={st.inp} value={nuevoCorreo} onChange={(e) => setNuevoCorreo(e.target.value)} placeholder="nuevo@correo.com" />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button style={st.btn(true)} onClick={handleCambiarCorreo} disabled={correoSaving}>
+            {correoSaving ? "Enviando..." : "Cambiar Correo"}
+          </button>
+        </div>
+        {correoMsg && (
+          <div style={{ fontSize: 12, color: correoMsg.includes("Error") ? "#b30000" : "#1a7a1a", fontWeight: 600, marginTop: 10, lineHeight: 1.5 }}>{correoMsg}</div>
+        )}
+        <div style={{ fontSize: 11, color: "#6E6E6E", marginTop: 10 }}>
+          Supabase enviará un link de confirmación tanto al correo actual como al nuevo. El cambio solo se aplica cuando se confirman ambos.
         </div>
       </div>
 

@@ -29,6 +29,7 @@ import TabClientes from "./tabs/TabClientes";
 import TabDelivery from "./tabs/TabDelivery";
 import TabGastos from "./tabs/TabGastos";
 import TabEstadisticas from "./tabs/TabEstadisticas";
+import TabImportante from "./tabs/TabImportante";
 import TabPerfil from "./tabs/TabPerfil";
 import VentaFormModal from "./modals/VentaFormModal";
 import InvFormModal from "./modals/InvFormModal";
@@ -133,6 +134,7 @@ export default function DashboardShell({
     { id: "delivery", label: "Delivery", icon: "\ud83d\udef5" },
     { id: "gastos", label: "Gastos", icon: "\ud83e\uddfe" },
     { id: "estadisticas", label: "Estad\u00edsticas", icon: "\ud83d\udcc8" },
+    { id: "importante", label: "Importante", icon: "\u2b50" },
     { id: "perfil", label: "Perfil", icon: "\ud83d\udc64" },
   ];
 
@@ -317,8 +319,14 @@ export default function DashboardShell({
                 </>
               )}
             </div>
-            <button onClick={onRefresh} title="Recargar datos desde la base de datos" style={{ background: "none", border: "1px solid #333", borderRadius: 6, color: "#fff", fontSize: 13, cursor: "pointer", padding: "6px 10px" }}>\u21bb</button>
-            <button onClick={onSyncSheets} title="Sincronizar ventas desde Google Sheets" style={{ background: "none", border: "1px solid #333", borderRadius: 6, color: "#fff", fontSize: 13, cursor: "pointer", padding: "6px 10px" }}>📋</button>
+            <button onClick={onRefresh} title="Recargar datos" style={{ background:"none", border:"1px solid #333", borderRadius:6, color:"#fff", fontSize:13, cursor:"pointer", padding:"6px 10px" }}>↺</button>
+            <button onClick={onSyncSheets} title="Sincronizar ventas desde Google Sheets" style={{ background:"none", border:"1px solid #333", borderRadius:6, color:"#fff", fontSize:13, cursor:"pointer", padding:"6px 10px" }}>📋</button>
+            {!isMobile && currentUser && (
+              <div style={{ display:"flex", alignItems:"center", gap:6, background:"#1a1a1a", borderRadius:6, padding:"6px 10px" }}>
+                <div style={{ width:22, height:22, borderRadius:"50%", background:"#FFF200", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"#000" }}>{currentUser[0]}</div>
+                <span style={{ fontSize:12, color:"#fff", fontWeight:600 }}>{currentUser}</span>
+              </div>
+            )}
             <button style={st.btn(true)} onClick={openNewVenta}>{isMobile ? "+ Venta" : "+ Registrar Venta"}</button>
           </div>
         </div>
@@ -349,6 +357,7 @@ export default function DashboardShell({
             <TabGastos {...sharedProps} onNew={openNewGasto} onEdit={openEditGasto} onDelete={(g) => setConfirmDelete({ type: "gasto", id: g.id, label: "\u00bfEliminar este gasto?" })} />
           )}
           {tab === "estadisticas" && <TabEstadisticas {...sharedProps} />}
+          {tab === "importante" && <TabImportante st={st} />}
           {tab === "perfil" && (
             <TabPerfil
               {...sharedProps}

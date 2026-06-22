@@ -11,6 +11,7 @@ const SHEET_GID = "826663950";
 const MODELO_MAP = {
   COSMOPOLITAN: "cosmopolitan",
   "ESPRESSO MARTINI": "espressomartini",
+  "EXPRESO MARTINI": "espressomartini",
   EXPRESO: "espressomartini",
   "CUBA LIBRE": "cubalibre",
   NEGRONI: "negroni",
@@ -46,7 +47,9 @@ function normalizaCodigo(codigoRaw, modeloId) {
 
 function normalizaModelo(raw) {
   if (!raw) return null;
-  const key = raw.toString().trim().toUpperCase();
+  // Colapsa cualquier espacio en blanco (incluyendo saltos de línea de celdas
+  // con texto envuelto, como "EXPRESO\nMARTINI") a un solo espacio.
+  const key = raw.toString().trim().toUpperCase().replace(/\s+/g, " ");
   return MODELO_MAP[key] || key.toLowerCase().replace(/\s+/g, "");
 }
 
