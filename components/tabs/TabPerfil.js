@@ -132,21 +132,10 @@ export default function TabPerfil({
         </div>
       </div>
 
-      <div style={st.card}>
-        <div style={st.sTitle}>Moneda y Tasa BCV</div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
-          <button style={st.btn(currency === "USD")} onClick={() => setCurrency("USD")}>USD ($)</button>
-          <button style={st.btn(currency === "BS")} onClick={() => setCurrency("BS")}>Bolívares (Bs)</button>
-        </div>
-        <div style={{ marginBottom: 8 }}>
-          <label style={st.fLabel}>Tasa de cambio (Bs por $1)</label>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="number" style={{ ...st.inp, width: 150 }} value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value) || 0)} />
-            <button style={st.btnSm()} onClick={onRefreshBcv} disabled={bcvLoading}>{bcvLoading ? "Actualizando..." : "🏦 Actualizar desde BCV"}</button>
-          </div>
-        </div>
-        <div style={{ fontSize: 11, color: bcvError ? "#b30000" : G2 }}>
-          {bcvError ? "No se pudo obtener la tasa BCV automáticamente. Puedes ingresarla a mano." : bcvFecha ? `Tasa oficial BCV publicada el ${bcvFecha}.` : "Tasa BCV no cargada aún."}
+
+      <div style={{ ...st.card, background:"#f9f9f6", padding:"14px 20px" }}>
+        <div style={{ fontSize:12, color:"#6E6E6E" }}>
+          💡 El selector de moneda (USD / Bs) y la tasa de cambio BCV están disponibles en la barra superior del dashboard.
         </div>
       </div>
     </div>

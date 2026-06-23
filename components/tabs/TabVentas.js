@@ -128,33 +128,66 @@ export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDe
         <div style={st.card}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr>{["Código", "Modelo", "Comprador", "Tel", "Vendedora", "Plataforma", "Pago", "Items", "Delivery", "Fecha", "Monto", "Comprobante", "Acciones"].map((h) => <th key={h} style={st.th}>{h}</th>)}</tr></thead>
+              <thead><tr>{["Código","Modelo","Comprador","Tel","Vendedora","Plataforma","Pago","Items","Delivery","Fecha","Monto","Factura","Acciones"].map((h)=><th key={h} style={st.th}>{h}</th>)}</tr></thead>
               <tbody>
-                {filteredVentas.map((v) => (
+                {filteredVentas.map((v) => {
+                  const modelo = MODELOS.find((m)=>m.id===v.modelo)?.nombre||"";
+                  function generarRecibo() {
+                    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Recibo mute.</title>
+<style>body{font-family:'Helvetica Neue',Arial,sans-serif;padding:40px;color:#000;max-width:500px;margin:auto}
+.logo{font-size:28px;font-weight:700;margin-bottom:4px}.sub{font-size:12px;color:#666;margin-bottom:32px}
+.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0ec;font-size:13px}
+.label{color:#666}.value{font-weight:600}.total{font-size:18px;font-weight:700;margin-top:16px;text-align:right}
+.footer{margin-top:32px;font-size:11px;color:#999;text-align:center}</style></head>
+<body>
+<div class="logo">mute.</div>
+<div class="sub">Recibo de compra · Cápsula 001</div>
+${[["Código",v.codigo],["Modelo",modelo],["Comprador",v.comprador],["Teléfono",v.telefono||"—"],["Correo",v.correo||"—"],["Vendedora",v.vendedora],["Plataforma",v.plataforma],["Método de pago",v.pago],["Delivery",v.delivery||"Local"],["Fecha",v.fecha],["Items",v.items||1],["Referencia",v.referencia||"—"]].map(([l,val])=>`<div class="row"><span class="label">${l}</span><span class="value">${val}</span></div>`).join("")}
+<div class="total">Total: $${v.monto}</div>
+<div class="footer">Gracias por tu compra · mutethebrand.com · @mutethebrand</div>
+</body></html>`;
+                    const w = window.open("","_blank");
+                    if(w){w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),300);}
+                  }
+                  function enviarWhatsApp() {
+                    const tel = (v.telefono||"").replace(/\D/g,"");
+                    const msg = encodeURIComponent(`Hola ${v.comprador}! 👋 Aquí está tu recibo de compra en *mute.* 🖤\n\n📦 *${modelo}* (${v.codigo})\n💳 Pago: ${v.pago}\n📅 Fecha: ${v.fecha}\n💵 Total: $${v.monto}\n\n¡Gracias por tu compra! 🙌`);
+                    window.open(tel ? `https://wa.me/${tel}?text=${msg}` : `https://wa.me/?text=${msg}`,"_blank");
+                  }
+                  function enviarCorreo() {
+                    const asunto = encodeURIComponent(`Tu recibo de compra en mute. · ${v.codigo}`);
+                    const cuerpo = encodeURIComponent(`Hola ${v.comprador},\n\nGracias por tu compra en mute.\n\nDetalles:\nProducto: ${modelo} (${v.codigo})\nPago: ${v.pago}\nFecha: ${v.fecha}\nTotal: $${v.monto}\n\n¡Hasta pronto!\nEquipo mute.`);
+                    window.open(`mailto:${v.correo||""}?subject=${asunto}&body=${cuerpo}`);
+                  }
+                  return (
                   <tr key={v.id}>
-                    <td style={st.td}><code style={{ background: "#f5f5f0", padding: "2px 5px", borderRadius: 3, fontSize: 11 }}>{v.codigo}</code></td>
-                    <td style={st.td}>{MODELOS.find((m) => m.id === v.modelo)?.nombre || "—"}</td>
-                    <td style={st.td}>
-                      <div style={{ fontWeight: 600 }}>{v.comprador}</div>
-                      {v.correo && <div style={{ fontSize: 11, color: G2 }}>{v.correo}</div>}
-                    </td>
-                    <td style={st.td}><span style={{ whiteSpace: "nowrap" }}>{v.telefono || "—"}</span></td>
+                    <td style={st.td}><code style={{ background:"#f5f5f0",padding:"2px 5px",borderRadius:3,fontSize:11 }}>{v.codigo}</code></td>
+                    <td style={st.td}>{modelo||"—"}</td>
+                    <td style={st.td}><div style={{ fontWeight:600 }}>{v.comprador}</div>{v.correo&&<div style={{ fontSize:11,color:G2 }}>{v.correo}</div>}</td>
+                    <td style={st.td}><span style={{ whiteSpace:"nowrap" }}>{v.telefono||"—"}</span></td>
                     <td style={st.td}>{v.vendedora}</td>
                     <td style={st.td}>{v.plataforma}</td>
-                    <td style={st.td}><span style={{ whiteSpace: "nowrap" }}>{v.pago}</span></td>
-                    <td style={st.td}><strong>{v.items || 1}</strong></td>
-                    <td style={st.td}><span style={st.deliveryBadge(v.delivery || "Local")}>{v.delivery || "Local"}</span></td>
-                    <td style={{ ...st.td, color: G1, fontSize: 11, whiteSpace: "nowrap" }}>{v.fecha}</td>
+                    <td style={st.td}><span style={{ whiteSpace:"nowrap" }}>{v.pago}</span></td>
+                    <td style={st.td}><strong>{v.items||1}</strong></td>
+                    <td style={st.td}><span style={st.deliveryBadge(v.delivery||"Local")}>{v.delivery||"Local"}</span></td>
+                    <td style={{ ...st.td,color:G1,fontSize:11,whiteSpace:"nowrap" }}>{v.fecha}</td>
                     <td style={st.td}><strong>{fmt(v.monto)}</strong></td>
-                    <td style={st.td}>{v.comprobante ? <a href={v.comprobante} target="_blank" rel="noreferrer" style={{ color: "#000", fontSize: 12, textDecoration: "underline" }}>Ver 📎</a> : <span style={{ color: "#ccc", fontSize: 11 }}>—</span>}</td>
                     <td style={st.td}>
-                      <div style={{ display: "flex", gap: 5 }}>
-                        <button style={{ ...st.btnSm(), fontSize: 13, padding: "3px 8px" }} onClick={() => onEdit(v)}>✏️</button>
-                        <button style={{ ...st.btnSm("#fee"), fontSize: 13, padding: "3px 8px" }} onClick={() => onDelete(v)}>🗑️</button>
+                      <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
+                        <button title="Ver recibo PDF" style={{ ...st.btnSm(),fontSize:12,padding:"3px 7px" }} onClick={generarRecibo}>🧾</button>
+                        <button title="Enviar por WhatsApp" style={{ ...st.btnSm(),fontSize:12,padding:"3px 7px",background:"#e8f5e8",borderColor:"#b8dcb8" }} onClick={enviarWhatsApp}>📱</button>
+                        {v.correo&&<button title="Enviar por correo" style={{ ...st.btnSm(),fontSize:12,padding:"3px 7px",background:"#e8eefc",borderColor:"#b8c8f8" }} onClick={enviarCorreo}>✉️</button>}
+                      </div>
+                    </td>
+                    <td style={st.td}>
+                      <div style={{ display:"flex",gap:4 }}>
+                        <button style={{ ...st.btnSm(),fontSize:13,padding:"3px 8px" }} onClick={()=>onEdit(v)}>✏️</button>
+                        <button style={{ ...st.btnSm("#fee"),fontSize:13,padding:"3px 8px" }} onClick={()=>onDelete(v)}>🗑️</button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr>

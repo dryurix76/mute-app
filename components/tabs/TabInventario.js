@@ -10,6 +10,7 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
   const [filterModelo, setFilterModelo] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterTalla, setFilterTalla] = useState("all");
+  const [filterDrop, setFilterDrop] = useState("all");
   const [search, setSearch] = useState("");
   const [invPage, setInvPage] = useState(1);
   const [invPerPage, setInvPerPage] = useState(20);
@@ -19,12 +20,14 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
   const filteredInv = useMemo(()=>inventory.filter((i)=>{
     if(filterModelo!=="all"&&i.modelo!==filterModelo)return false;
     if(filterTalla!=="all"&&i.talla!==filterTalla)return false;
+    if(filterDrop!=="all"&&(i.drop||"DROP 001")!==filterDrop)return false;
+    if(filterDrop!=="all"&&(i.drop||"DROP 001")!==filterDrop)return false;
     const sold=vendidas.includes(i.codigo);
     if(filterStatus==="disponible"&&sold)return false;
     if(filterStatus==="no_disponible"&&!sold)return false;
     if(search){const q=search.toLowerCase();if(!i.codigo.toLowerCase().includes(q)&&!i.nombre.toLowerCase().includes(q)&&!i.talla.toLowerCase().includes(q))return false;}
     return true;
-  }),[inventory,vendidas,filterModelo,filterStatus,filterTalla,search]);
+  }),[inventory,vendidas,filterModelo,filterStatus,filterTalla,filterDrop,search]);
 
   const masVendidos = useMemo(()=>{
     const counts={};
@@ -33,6 +36,8 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
   },[inventory,vendidas]);
 
   const sugerencias = search.length>0?filteredInv.slice(0,6):[];
+  const drops = useMemo(()=>[...new Set(inventory.map(i=>i.drop||"DROP 001"))].sort(),[inventory]);
+
   const effPerPage = invPerPage==="Todos"?filteredInv.length||1:invPerPage;
   const totalPages = Math.ceil(filteredInv.length/effPerPage)||1;
   const pageItems = filteredInv.slice((invPage-1)*effPerPage,invPage*effPerPage);
@@ -111,6 +116,14 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
         <select style={{ ...st.sel,width:100 }} value={filterTalla} onChange={(e)=>{setFilterTalla(e.target.value);setInvPage(1);}}>
           <option value="all">Talla</option>
           {TALLAS.map((t)=><option key={t} value={t}>{t}</option>)}
+        </select>
+        <select style={{ ...st.sel,width:120 }} value={filterDrop} onChange={(e)=>{setFilterDrop(e.target.value);setInvPage(1);}}>
+          <option value="all">Drop</option>
+          <option value="DROP 001">DROP 001</option>
+        </select>
+        <select style={{ ...st.sel,width:130 }} value={filterDrop} onChange={(e)=>{setFilterDrop(e.target.value);setInvPage(1);}}>
+          <option value="all">Drop</option>
+          {drops.map((d)=><option key={d} value={d}>{d}</option>)}
         </select>
         <select style={{ ...st.sel,width:140 }} value={filterStatus} onChange={(e)=>{setFilterStatus(e.target.value);setInvPage(1);}}>
           <option value="all">Status</option>
