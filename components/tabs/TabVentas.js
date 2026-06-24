@@ -143,10 +143,43 @@ ${[["Código",v.codigo],["Modelo",modelo],["Comprador",v.comprador],["Teléfono"
                     const w = window.open("","_blank");
                     if(w){w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),300);}
                   }
-                  function enviarWhatsApp() {
-                    const tel = (v.telefono||"").replace(/\D/g,"");
+                  async function enviarWhatsApp() {
+                    const tel = v.telefono;
+                    // Si hay teléfono y API configurada, enviar por Meta API
+                    if (tel) {
+                      try {
+                        const res = await fetch("/api/whatsapp", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            tipo: "recibo",
+                            telefono: tel,
+                            datos: {
+                              comprador: v.comprador,
+                              telefono: tel,
+                              modelo,
+                              talla: v.talla || "—",
+                              codigo: v.codigo,
+                              monto: v.monto,
+                              pago: v.pago,
+                              vendedora: v.vendedora,
+                              fecha: v.fecha,
+                            },
+                          }),
+                        });
+                        const data = await res.json();
+                        if (data.ok) {
+                          alert(`✓ Recibo enviado por WhatsApp a ${v.comprador}`);
+                          return;
+                        }
+                      } catch (e) {
+                        console.warn("Meta API falló, usando WhatsApp Web:", e.message);
+                      }
+                    }
+                    // Fallback: abrir WhatsApp Web
+                    const telLimpio = (tel || "").replace(/\D/g, "");
                     const msg = encodeURIComponent(`Hola ${v.comprador}! 👋 Aquí está tu recibo de compra en *mute.* 🖤\n\n📦 *${modelo}* (${v.codigo})\n💳 Pago: ${v.pago}\n📅 Fecha: ${v.fecha}\n💵 Total: $${v.monto}\n\n¡Gracias por tu compra! 🙌`);
-                    window.open(tel ? `https://wa.me/${tel}?text=${msg}` : `https://wa.me/?text=${msg}`,"_blank");
+                    window.open(telLimpio ? `https://wa.me/${telLimpio}?text=${msg}` : `https://wa.me/?text=${msg}`, "_blank");
                   }
                   function enviarCorreo() {
                     const asunto = encodeURIComponent(`Tu recibo de compra en mute. · ${v.codigo}`);

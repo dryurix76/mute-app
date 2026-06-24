@@ -53,6 +53,27 @@ export default function DashboardShell({
   const [currentUser, setCurrentUser] = useState("");
   const [perfiles, setPerfiles] = useState([]);
   const [perfilesLoading, setPerfilesLoading] = useState(true);
+  const [stockNotifSent, setStockNotifSent] = useState(false);
+
+  async function notificarStockBajo(alertas) {
+    if (stockNotifSent || alertas.length === 0) return;
+    const telefonos = perfiles.map(p => p.telefono).filter(Boolean);
+    if (telefonos.length === 0) return;
+    try {
+      const res = await fetch("/api/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: "stock_bajo", datos: { alertas, telefonos } }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setStockNotifSent(true);
+        console.log(`Notificación de stock enviada a ${data.exitosos} número(s)`);
+      }
+    } catch (e) {
+      console.warn("No se pudo enviar notificación de stock:", e.message);
+    }
+  }
 
   async function cargarPerfiles() {
     setPerfilesLoading(true);
@@ -368,6 +389,13 @@ export default function DashboardShell({
                 <span style={{ fontSize: 11, color: "#ff9999" }}>+{alertasStock.length - 6} más</span>
               )}
             </div>
+            <button
+              onClick={() => notificarStockBajo(alertasStock)}
+              disabled={stockNotifSent}
+              style={{ marginLeft: "auto", fontSize: 11, padding: "4px 12px", borderRadius: 20, border: "1px solid #4a0000", background: stockNotifSent ? "#2a0000" : "#ff3333", color: "#fff", cursor: stockNotifSent ? "default" : "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+            >
+              {stockNotifSent ? "✓ Notificado" : "📱 Notificar por WhatsApp"}
+            </button>
           </div>
         )}
 
