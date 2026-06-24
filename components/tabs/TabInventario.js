@@ -21,7 +21,6 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
     if(filterModelo!=="all"&&i.modelo!==filterModelo)return false;
     if(filterTalla!=="all"&&i.talla!==filterTalla)return false;
     if(filterDrop!=="all"&&(i.drop||"DROP 001")!==filterDrop)return false;
-    if(filterDrop!=="all"&&(i.drop||"DROP 001")!==filterDrop)return false;
     const sold=vendidas.includes(i.codigo);
     if(filterStatus==="disponible"&&sold)return false;
     if(filterStatus==="no_disponible"&&!sold)return false;
@@ -120,10 +119,6 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
         <select style={{ ...st.sel,width:120 }} value={filterDrop} onChange={(e)=>{setFilterDrop(e.target.value);setInvPage(1);}}>
           <option value="all">Drop</option>
           <option value="DROP 001">DROP 001</option>
-        </select>
-        <select style={{ ...st.sel,width:130 }} value={filterDrop} onChange={(e)=>{setFilterDrop(e.target.value);setInvPage(1);}}>
-          <option value="all">Drop</option>
-          {drops.map((d)=><option key={d} value={d}>{d}</option>)}
         </select>
         <select style={{ ...st.sel,width:140 }} value={filterStatus} onChange={(e)=>{setFilterStatus(e.target.value);setInvPage(1);}}>
           <option value="all">Status</option>

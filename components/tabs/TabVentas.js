@@ -1,14 +1,13 @@
 "use client";
 import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
-import { G1, G2, MODELOS, PAGOS, PLATAFORMAS_FILTRO, REFERIDOS_FILTRO, DELIVERY } from "../../lib/constants";
+import { G1, G2, MODELOS, PAGOS, PLATAFORMAS_FILTRO, DELIVERY } from "../../lib/constants";
 
 export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDelete }) {
   const [search, setSearch] = useState("");
   const [filterVendedora, setFilterVendedora] = useState("all");
   const [filterPlataforma, setFilterPlataforma] = useState("all");
   const [filterPago, setFilterPago] = useState("all");
-  const [filterReferido, setFilterReferido] = useState("all");
   const [filterDelivery, setFilterDelivery] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -17,7 +16,6 @@ export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDe
     if (filterVendedora !== "all" && v.vendedora !== filterVendedora) return false;
     if (filterPlataforma !== "all" && v.plataforma !== filterPlataforma) return false;
     if (filterPago !== "all" && v.pago !== filterPago) return false;
-    if (filterReferido !== "all" && (v.referido || "Sin referido") !== filterReferido) return false;
     if (filterDelivery !== "all" && (v.delivery || "Local") !== filterDelivery) return false;
     if (dateFrom && v.fecha < dateFrom) return false;
     if (dateTo && v.fecha > dateTo) return false;
@@ -27,10 +25,10 @@ export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDe
       if (!haystack.includes(q)) return false;
     }
     return true;
-  }), [ventas, search, filterVendedora, filterPlataforma, filterPago, filterReferido, filterDelivery, dateFrom, dateTo]);
+  }), [ventas, search, filterVendedora, filterPlataforma, filterPago, filterDelivery, dateFrom, dateTo]);
 
-  const filtersActive = search || filterVendedora !== "all" || filterPlataforma !== "all" || filterPago !== "all" || filterReferido !== "all" || filterDelivery !== "all" || dateFrom || dateTo;
-  const clearFilters = () => { setSearch(""); setFilterVendedora("all"); setFilterPlataforma("all"); setFilterPago("all"); setFilterReferido("all"); setFilterDelivery("all"); setDateFrom(""); setDateTo(""); };
+  const filtersActive = search || filterVendedora !== "all" || filterPlataforma !== "all" || filterPago !== "all" || filterDelivery !== "all" || dateFrom || dateTo;
+  const clearFilters = () => { setSearch(""); setFilterVendedora("all"); setFilterPlataforma("all"); setFilterPago("all"); setFilterDelivery("all"); setDateFrom(""); setDateTo(""); };
 
   function exportExcel() {
     const rows = filteredVentas.map((v) => ({
@@ -95,10 +93,6 @@ export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDe
           <select style={{ ...st.sel, width: 150 }} value={filterPago} onChange={(e) => setFilterPago(e.target.value)}>
             <option value="all">Pago: Todos</option>
             {PAGOS.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
-          <select style={{ ...st.sel, width: 170 }} value={filterReferido} onChange={(e) => setFilterReferido(e.target.value)}>
-            <option value="all">Referido: Todos</option>
-            {REFERIDOS_FILTRO.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
           <select style={{ ...st.sel, width: 160 }} value={filterDelivery} onChange={(e) => setFilterDelivery(e.target.value)}>
             <option value="all">Delivery: Todos</option>

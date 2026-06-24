@@ -1,14 +1,13 @@
 "use client";
 import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
-import { G1, G2, MODELOS, PAGOS, PLATAFORMAS_FILTRO, REFERIDOS_FILTRO, PLATAFORMAS, EDAD_BRACKETS, edadBracket } from "../../lib/constants";
+import { G1, G2, MODELOS, PAGOS, PLATAFORMAS_FILTRO, PLATAFORMAS, EDAD_BRACKETS, edadBracket } from "../../lib/constants";
 
 export default function TabClientes({ st, fmt, ventas }) {
   const [search, setSearch] = useState("");
   const [filterEdad, setFilterEdad] = useState("all");
   const [filterPago, setFilterPago] = useState("all");
   const [filterPlataforma, setFilterPlataforma] = useState("all");
-  const [filterReferido, setFilterReferido] = useState("all");
   const [editando, setEditando] = useState(null);
   const [clientesExtra, setClientesExtra] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -36,7 +35,11 @@ export default function TabClientes({ st, fmt, ventas }) {
       if(v.telefono)c.telefono=v.telefono; if(v.correo)c.correo=v.correo;
       if(v.ciudad)c.ciudad=v.ciudad; if(v.edad)c.edad=v.edad;
     });
-    return Object.values(map).map((c)=>({ ...c, pagos:Array.from(c.pagos), plataformas:Array.from(c.plataformas), modelos:Array.from(c.modelos), referidos:Array.from(c.referidos) }));
+    return Object.values(map).map((c)=>({
+      ...c,
+      pagos:Array.from(c.pagos), plataformas:Array.from(c.plataformas),
+      modelos:Array.from(c.modelos), referidos:Array.from(c.referidos),
+    }));
   }, [ventas]);
 
   const clientes = useMemo(() => {
@@ -49,19 +52,19 @@ export default function TabClientes({ st, fmt, ventas }) {
     if(filterEdad!=="all"&&edadBracket(c.edad)!==filterEdad)return false;
     if(filterPago!=="all"&&!(c.pagos||[]).includes(filterPago))return false;
     if(filterPlataforma!=="all"&&!(c.plataformas||[]).includes(filterPlataforma))return false;
-    if(filterReferido!=="all"&&!(c.referidos||[]).includes(filterReferido))return false;
     if(search){
       const q=search.toLowerCase();
       const hay=[c.nombre,c.telefono,c.correo,c.ciudad,c.edad,...(c.modelos||[])].filter(Boolean).join(" ").toLowerCase();
       if(!hay.includes(q))return false;
     }
     return true;
-  }).sort((a,b)=>(b.totalGastado||0)-(a.totalGastado||0)), [clientes,search,filterEdad,filterPago,filterPlataforma,filterReferido]);
+  }).sort((a,b)=>(b.totalGastado||0)-(a.totalGastado||0)), [clientes,search,filterEdad,filterPago,filterPlataforma]);
 
-  const filtersActive = search||filterEdad!=="all"||filterPago!=="all"||filterPlataforma!=="all"||filterReferido!=="all";
-  const clearFilters = ()=>{setSearch("");setFilterEdad("all");setFilterPago("all");setFilterPlataforma("all");setFilterReferido("all");};
+  const filtersActive = search||filterEdad!=="all"||filterPago!=="all"||filterPlataforma!=="all";
+  const clearFilters = ()=>{ setSearch(""); setFilterEdad("all"); setFilterPago("all"); setFilterPlataforma("all"); };
+
   const clientesRecurrentes = clientes.filter((c)=>c.compras>1).length;
-  const ticketPromedio = clientes.length?clientes.reduce((s,c)=>s+(c.totalGastado||0),0)/clientes.length:0;
+  const ticketPromedio = clientes.length ? clientes.reduce((s,c)=>s+(c.totalGastado||0),0)/clientes.length : 0;
 
   function deleteCliente(id) {
     setClientesExtra((prev)=>prev.filter((c)=>c.id!==id));
@@ -86,17 +89,34 @@ export default function TabClientes({ st, fmt, ventas }) {
   }
 
   function exportExcel() {
-    const rows = filteredClientes.map((c)=>({ Cliente:c.nombre,Telefono:c.telefono,Correo:c.correo,Edad:c.edad,Ciudad:c.ciudad,Compras:c.compras,Items:c.itemsComprados,"Total Gastado":c.totalGastado,Plataformas:(c.plataformas||[]).join(", "),"Metodos de Pago":(c.pagos||[]).join(", "),Modelos:(c.modelos||[]).join(", "),"Primera Compra":c.primeraCompra,"Ultima Compra":c.ultimaCompra }));
-    const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Clientes");
+    const rows = filteredClientes.map((c)=>({
+      Cliente:c.nombre, Telefono:c.telefono, Correo:c.correo, Edad:c.edad, Ciudad:c.ciudad,
+      Compras:c.compras, Items:c.itemsComprados, "Total Gastado":c.totalGastado,
+      Plataformas:(c.plataformas||[]).join(", "), "Metodos de Pago":(c.pagos||[]).join(", "),
+      Modelos:(c.modelos||[]).join(", "), "Primera Compra":c.primeraCompra, "Ultima Compra":c.ultimaCompra,
+    }));
+    const ws=XLSX.utils.json_to_sheet(rows);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,"Clientes");
     XLSX.writeFile(wb,`mute_clientes_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
   return (
     <div>
       <div style={{ ...st.statsRow, marginBottom:16 }}>
-        <div style={st.statCard}><div style={{ fontSize:11,color:G2,textTransform:"uppercase",marginBottom:6 }}>Total Clientes</div><div style={{ fontSize:28,fontWeight:700 }}>{clientes.length}</div></div>
-        <div style={st.statCard}><div style={{ fontSize:11,color:G2,textTransform:"uppercase",marginBottom:6 }}>Recurrentes</div><div style={{ fontSize:28,fontWeight:700 }}>{clientesRecurrentes}</div><div style={{ fontSize:12,color:G1 }}>{clientes.length?Math.round(clientesRecurrentes/clientes.length*100):0}%</div></div>
-        <div style={st.statCard}><div style={{ fontSize:11,color:G2,textTransform:"uppercase",marginBottom:6 }}>Ticket Promedio</div><div style={{ fontSize:28,fontWeight:700 }}>{fmt(ticketPromedio)}</div></div>
+        <div style={st.statCard}>
+          <div style={{ fontSize:11,color:G2,textTransform:"uppercase",marginBottom:6 }}>Total Clientes</div>
+          <div style={{ fontSize:28,fontWeight:700 }}>{clientes.length}</div>
+        </div>
+        <div style={st.statCard}>
+          <div style={{ fontSize:11,color:G2,textTransform:"uppercase",marginBottom:6 }}>Recurrentes</div>
+          <div style={{ fontSize:28,fontWeight:700 }}>{clientesRecurrentes}</div>
+          <div style={{ fontSize:12,color:G1 }}>{clientes.length?Math.round(clientesRecurrentes/clientes.length*100):0}%</div>
+        </div>
+        <div style={st.statCard}>
+          <div style={{ fontSize:11,color:G2,textTransform:"uppercase",marginBottom:6 }}>Ticket Promedio</div>
+          <div style={{ fontSize:28,fontWeight:700 }}>{fmt(ticketPromedio)}</div>
+        </div>
       </div>
 
       <div style={{ ...st.card, marginBottom:16, padding:"16px 20px" }}>
@@ -114,11 +134,7 @@ export default function TabClientes({ st, fmt, ventas }) {
             <option value="all">Plataforma: Todas</option>
             {PLATAFORMAS_FILTRO.map((p)=><option key={p} value={p}>{p}</option>)}
           </select>
-          <select style={{ ...st.sel,width:170 }} value={filterReferido} onChange={(e)=>setFilterReferido(e.target.value)}>
-            <option value="all">Referido: Todos</option>
-            {REFERIDOS_FILTRO.map((r)=><option key={r} value={r}>{r}</option>)}
-          </select>
-          {filtersActive&&<button style={st.btnSm()} onClick={clearFilters}>✕ Limpiar</button>}
+          {filtersActive && <button style={st.btnSm()} onClick={clearFilters}>✕ Limpiar</button>}
           <div style={{ display:"flex",gap:8,marginLeft:"auto" }}>
             <button style={st.btnSm()} onClick={exportExcel}>📊 Excel</button>
             <span style={{ fontSize:13,color:G1,alignSelf:"center" }}>{filteredClientes.length} de {clientes.length}</span>
@@ -153,29 +169,35 @@ export default function TabClientes({ st, fmt, ventas }) {
         <div style={st.card}>
           <div style={{ overflowX:"auto" }}>
             <table style={{ width:"100%",borderCollapse:"collapse" }}>
-              <thead><tr>{["Cliente","Contacto","Edad","Ciudad","Plataforma","Compras","Total","Última Compra",""].map((h)=><th key={h} style={st.th}>{h}</th>)}</tr></thead>
+              <thead>
+                <tr>
+                  {["Cliente","Contacto","Edad","Ciudad","Plataforma","Compras","Total","Última Compra",""].map((h)=>(
+                    <th key={h} style={st.th}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
               <tbody>
                 {filteredClientes.map((c)=>(
                   <tr key={c.id}>
                     {editando===c.id ? (
                       <>
-                        <td style={st.td}><input style={{ ...st.inp,width:130 }} defaultValue={c.nombre} id={`edit_nombre_${c.id}`}/></td>
+                        <td style={st.td}><input style={{ ...st.inp,width:130 }} defaultValue={c.nombre} id={`en_${c.id}`}/></td>
                         <td style={st.td}>
-                          <input style={{ ...st.inp,width:120,marginBottom:4 }} defaultValue={c.telefono} id={`edit_tel_${c.id}`} placeholder="Teléfono"/>
-                          <input style={{ ...st.inp,width:120 }} defaultValue={c.correo} id={`edit_correo_${c.id}`} placeholder="Correo"/>
+                          <input style={{ ...st.inp,width:120,marginBottom:4 }} defaultValue={c.telefono} id={`et_${c.id}`} placeholder="Teléfono"/>
+                          <input style={{ ...st.inp,width:120 }} defaultValue={c.correo} id={`ec_${c.id}`} placeholder="Correo"/>
                         </td>
-                        <td style={st.td}><input style={{ ...st.inp,width:50 }} defaultValue={c.edad} id={`edit_edad_${c.id}`}/></td>
-                        <td style={st.td}><input style={{ ...st.inp,width:100 }} defaultValue={c.ciudad} id={`edit_ciudad_${c.id}`}/></td>
+                        <td style={st.td}><input style={{ ...st.inp,width:50 }} defaultValue={c.edad} id={`ee_${c.id}`}/></td>
+                        <td style={st.td}><input style={{ ...st.inp,width:100 }} defaultValue={c.ciudad} id={`eci_${c.id}`}/></td>
                         <td style={st.td} colSpan={3}></td>
                         <td style={st.td}></td>
                         <td style={st.td}>
                           <div style={{ display:"flex",gap:4 }}>
                             <button style={{ ...st.btnSm(),padding:"3px 8px",fontSize:11 }} onClick={()=>saveEdit(c.id,{
-                              nombre:document.getElementById(`edit_nombre_${c.id}`)?.value||c.nombre,
-                              telefono:document.getElementById(`edit_tel_${c.id}`)?.value||c.telefono,
-                              correo:document.getElementById(`edit_correo_${c.id}`)?.value||c.correo,
-                              edad:document.getElementById(`edit_edad_${c.id}`)?.value||c.edad,
-                              ciudad:document.getElementById(`edit_ciudad_${c.id}`)?.value||c.ciudad,
+                              nombre:document.getElementById(`en_${c.id}`)?.value||c.nombre,
+                              telefono:document.getElementById(`et_${c.id}`)?.value||c.telefono,
+                              correo:document.getElementById(`ec_${c.id}`)?.value||c.correo,
+                              edad:document.getElementById(`ee_${c.id}`)?.value||c.edad,
+                              ciudad:document.getElementById(`eci_${c.id}`)?.value||c.ciudad,
                             })}>✓</button>
                             <button style={{ ...st.btnSm("#fee"),padding:"3px 8px",fontSize:11 }} onClick={()=>setEditando(null)}>✕</button>
                           </div>
@@ -183,8 +205,14 @@ export default function TabClientes({ st, fmt, ventas }) {
                       </>
                     ) : (
                       <>
-                        <td style={st.td}><strong>{c.nombre}</strong>{c.compras>1&&<span style={{ ...st.PC,marginLeft:6,fontSize:9 }}>Recurrente</span>}</td>
-                        <td style={st.td}>{c.telefono&&<div style={{ fontSize:11 }}>{c.telefono}</div>}{c.correo&&<div style={{ fontSize:11,color:G2 }}>{c.correo}</div>}</td>
+                        <td style={st.td}>
+                          <strong>{c.nombre}</strong>
+                          {c.compras>1&&<span style={{ ...st.PC,marginLeft:6,fontSize:9 }}>Recurrente</span>}
+                        </td>
+                        <td style={st.td}>
+                          {c.telefono&&<div style={{ fontSize:11 }}>{c.telefono}</div>}
+                          {c.correo&&<div style={{ fontSize:11,color:G2 }}>{c.correo}</div>}
+                        </td>
                         <td style={st.td}>{c.edad||"—"}</td>
                         <td style={st.td}>{c.ciudad||"—"}</td>
                         <td style={st.td}><span style={{ fontSize:11 }}>{(c.plataformas||[]).join(", ")||"—"}</span></td>

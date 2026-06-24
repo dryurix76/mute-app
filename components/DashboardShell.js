@@ -128,6 +128,17 @@ export default function DashboardShell({
   const totalIngresos = ventas.reduce((s, v) => s + v.monto, 0);
   const margen = totalIngresos - ventas.length * 12.65;
 
+  // Alertas de stock bajo — agrupa disponibles por modelo+talla
+  const alertasStock = (() => {
+    const counts = {};
+    disponibles.forEach((i) => {
+      const key = `${i.modelo}__${i.talla}`;
+      if (!counts[key]) counts[key] = { modelo: i.modelo, nombre: i.nombre || i.modelo, talla: i.talla, cantidad: 0 };
+      counts[key].cantidad++;
+    });
+    return Object.values(counts).filter((c) => c.cantidad <= 2).sort((a, b) => a.cantidad - b.cantidad);
+  })();
+
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: "\ud83d\udcca" },
     { id: "inventario", label: "Inventario", icon: "\ud83d\udc55" },
@@ -337,6 +348,24 @@ export default function DashboardShell({
         {syncMsg && (
           <div style={{ background: "#1a1a1a", color: "#7dd8c0", fontSize: 12, padding: "8px 32px", textAlign: "center" }}>
             {syncMsg}
+          </div>
+        )}
+
+        {alertasStock.length > 0 && (
+          <div style={{ background: "#1a0000", borderBottom: "1px solid #3a0000", padding: "8px 24px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, color: "#ff9999", fontWeight: 700, whiteSpace: "nowrap" }}>
+              ⚠️ Stock bajo ({alertasStock.length} combinación{alertasStock.length > 1 ? "es" : ""})
+            </span>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {alertasStock.slice(0, 6).map((a) => (
+                <span key={`${a.modelo}_${a.talla}`} style={{ fontSize: 11, background: "#2a0000", color: "#ffaaaa", padding: "3px 10px", borderRadius: 20, border: "1px solid #4a0000" }}>
+                  {a.nombre?.split(" ")[0] || a.modelo} {a.talla} — {a.cantidad === 0 ? "agotada" : `${a.cantidad} restante${a.cantidad > 1 ? "s" : ""}`}
+                </span>
+              ))}
+              {alertasStock.length > 6 && (
+                <span style={{ fontSize: 11, color: "#ff9999" }}>+{alertasStock.length - 6} más</span>
+              )}
+            </div>
           </div>
         )}
 
