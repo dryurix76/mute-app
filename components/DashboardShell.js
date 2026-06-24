@@ -31,6 +31,7 @@ import TabGastos from "./tabs/TabGastos";
 import TabEstadisticas from "./tabs/TabEstadisticas";
 import TabImportante from "./tabs/TabImportante";
 import TabPerfil from "./tabs/TabPerfil";
+import TabProyecciones from "./tabs/TabProyecciones";
 import VentaFormModal from "./modals/VentaFormModal";
 import InvFormModal from "./modals/InvFormModal";
 import GastoFormModal from "./modals/GastoFormModal";
@@ -136,6 +137,7 @@ export default function DashboardShell({
     { id: "gastos", label: "Gastos", icon: "\ud83e\uddfe" },
     { id: "estadisticas", label: "Estad\u00edsticas", icon: "\ud83d\udcc8" },
     { id: "importante", label: "Importante", icon: "\u2b50" },
+    { id: "proyecciones", label: "Proyecciones", icon: "\ud83c\udfaf" },
     { id: "perfil", label: "Perfil", icon: "\ud83d\udc64" },
   ];
 
@@ -359,6 +361,13 @@ export default function DashboardShell({
           )}
           {tab === "estadisticas" && <TabEstadisticas {...sharedProps} />}
           {tab === "importante" && <TabImportante st={st} />}
+          {tab === "proyecciones" && (
+            <TabProyecciones
+              gastos={gastos}
+              ventas={ventas}
+              inventory={inventory}
+            />
+          )}
           {tab === "perfil" && (
             <TabPerfil
               {...sharedProps}
