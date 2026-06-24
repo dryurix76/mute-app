@@ -35,6 +35,9 @@ export default function TabProyecciones({ gastos, ventas, inventory }) {
   const [precioVenta, setPrecioVenta] = useState(30);
   const [unidadesDrop, setUnidadesDrop] = useState(100);
   const [mesesProyeccion, setMesesProyeccion] = useState(3);
+  const [costoDelivery, setCostoDelivery] = useState(5);
+  const [ingresoNetoPorDelivery, setIngresoNetoPorDelivery] = useState(2.5);
+  const [pctConDelivery, setPctConDelivery] = useState(70);
   const [editandoCosto, setEditandoCosto] = useState(null);
   const [nuevoCostoLabel, setNuevoCostoLabel] = useState("");
   const [nuevoCostoValor, setNuevoCostoValor] = useState("");
@@ -65,56 +68,67 @@ export default function TabProyecciones({ gastos, ventas, inventory }) {
     const costoMensual = costosFijos.filter(c => c.tipo === "mensual").reduce((s, c) => s + c.valor, 0);
     const costoTotalPeriodo = costoUnico + (costoMensual * mesesProyeccion);
     const margenPorPrenda = precioVenta - costoPorPrenda;
-    const breakEvenUnidades = Math.ceil(costoTotalPeriodo / margenPorPrenda);
-    const breakEvenIngresos = breakEvenUnidades * precioVenta;
 
     const escenarios = ESCENARIOS.map(e => {
       const unidades = Math.round(unidadesDrop * e.pct);
-      const ingresos = unidades * precioVenta;
-      const costo = costoUnico + (costoPorPrenda * unidades) + (costoMensual * mesesProyeccion);
+      const unidadesConDelivery = Math.round(unidades * pctConDelivery / 100);
+      const ingresosVentas = unidades * precioVenta;
+      const ingresosDelivery = unidadesConDelivery * ingresoNetoPorDelivery;
+      const ingresos = ingresosVentas + ingresosDelivery;
+      const costo = costoUnico + (costoPorPrenda * unidades) + (costoMensual * mesesProyeccion)
+        + (unidadesConDelivery * (costoDelivery - ingresoNetoPorDelivery));
       const ganancia = ingresos - costo;
       const roi = costo > 0 ? ((ganancia / costo) * 100) : 0;
-      return { ...e, unidades, ingresos, costo, ganancia, roi };
+      return { ...e, unidades, unidadesConDelivery, ingresosVentas, ingresosDelivery, ingresos, costo, ganancia, roi };
     });
 
-    // Curva ingreso vs costo para gráfica break-even
+    const unidadesEsperadas = Math.round(unidadesDrop * 0.8);
+    const unidadesConDeliveryEsp = Math.round(unidadesEsperadas * pctConDelivery / 100);
+    const breakEvenUnidades = Math.ceil(
+      (costoTotalPeriodo - (unidadesConDeliveryEsp * ingresoNetoPorDelivery)) / margenPorPrenda
+    );
+    const breakEvenIngresos = breakEvenUnidades * precioVenta;
+
     const curva = [];
     const maxU = unidadesDrop + 20;
     for (let u = 0; u <= maxU; u += Math.ceil(maxU / 20)) {
+      const uDel = Math.round(u * pctConDelivery / 100);
       curva.push({
         unidades: u,
-        ingresos: u * precioVenta,
+        ingresos: u * precioVenta + uDel * ingresoNetoPorDelivery,
         costos: costoUnico + (costoPorPrenda * u) + (costoMensual * mesesProyeccion),
       });
     }
 
-    // Proyección mensual de flujo de caja (distribuye ventas uniformemente)
     const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
     const mesActual = new Date().getMonth();
     const flujoMensual = ESCENARIOS.map(e => {
       const unidadesMes = Math.round((unidadesDrop * e.pct) / mesesProyeccion);
+      const uDelMes = Math.round(unidadesMes * pctConDelivery / 100);
       return {
         id: e.id, label: e.label,
         meses: Array.from({ length: mesesProyeccion }, (_, i) => ({
           mes: meses[(mesActual + i) % 12],
-          ingresos: unidadesMes * precioVenta,
+          ingresos: unidadesMes * precioVenta + uDelMes * ingresoNetoPorDelivery,
           gastos: costoMensual + (i === 0 ? costoUnico : 0),
-          neto: (unidadesMes * precioVenta) - costoMensual - (i === 0 ? costoUnico : 0),
+          neto: (unidadesMes * precioVenta + uDelMes * ingresoNetoPorDelivery) - costoMensual - (i === 0 ? costoUnico : 0),
         })),
       };
     });
 
-    // Datos históricos reales de Supabase
     const ingresosReales = (ventas || []).reduce((s, v) => s + Number(v.monto || 0), 0);
     const gastosReales = (gastos || []).reduce((s, g) => s + Number(g.cantidad || 0), 0);
     const ventasDrop1 = (ventas || []).length;
+    const deliveriesReales = (ventas || []).filter(v => (v.delivery || "Local") === "Local").length;
+    const ingresoDeliveryReal = deliveriesReales * ingresoNetoPorDelivery;
 
     return {
       costoUnico, costoMensual, costoTotalPeriodo, margenPorPrenda,
       breakEvenUnidades, breakEvenIngresos, escenarios, curva, flujoMensual,
-      ingresosReales, gastosReales, ventasDrop1,
+      ingresosReales, gastosReales, ventasDrop1, deliveriesReales, ingresoDeliveryReal,
     };
-  }, [costosFijos, costoPorPrenda, precioVenta, unidadesDrop, mesesProyeccion, ventas, gastos]);
+  }, [costosFijos, costoPorPrenda, precioVenta, unidadesDrop, mesesProyeccion,
+      costoDelivery, ingresoNetoPorDelivery, pctConDelivery, ventas, gastos]);
 
   return (
     <div>
@@ -154,6 +168,30 @@ export default function TabProyecciones({ gastos, ventas, inventory }) {
                   onChange={e => p.set(Number(e.target.value) || 0)} />
               </div>
             ))}
+          </div>
+
+          {/* Delivery */}
+          <div style={{ background: "#f0f8ff", borderRadius: 8, padding: "12px 14px", marginBottom: 16, border: "1px solid #c8dff8" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, color: "#1a4a9e" }}>🛵 Parámetros de Delivery</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div>
+                <label style={stLabel}>Cobrado al cliente ($)</label>
+                <input type="number" step="0.5" style={stInput} value={costoDelivery} onChange={e => setCostoDelivery(Number(e.target.value)||0)}/>
+              </div>
+              <div>
+                <label style={stLabel}>Ingreso neto MUTE ($)</label>
+                <input type="number" step="0.5" style={stInput} value={ingresoNetoPorDelivery} onChange={e => setIngresoNetoPorDelivery(Number(e.target.value)||0)}/>
+              </div>
+              <div>
+                <label style={stLabel}>% pedidos con delivery</label>
+                <input type="number" min="0" max="100" style={stInput} value={pctConDelivery} onChange={e => setPctConDelivery(Number(e.target.value)||0)}/>
+              </div>
+            </div>
+            {calculos.deliveriesReales > 0 && (
+              <div style={{ fontSize: 11, color: "#1a4a9e", marginTop: 8 }}>
+                Drop 001: {calculos.deliveriesReales} deliveries reales · ingreso extra estimado: {fmt(calculos.ingresoDeliveryReal)}
+              </div>
+            )}
           </div>
 
           <div style={{ background: "#f9f9f6", borderRadius: 8, padding: "10px 14px", marginBottom: 16 }}>
@@ -230,7 +268,9 @@ export default function TabProyecciones({ gastos, ventas, inventory }) {
             <div style={{ fontSize: 12, fontWeight: 700, color: COLORES[e.id], textTransform: "uppercase", marginBottom: 10 }}>{e.label}</div>
             <div style={{ fontSize: 11, color: G2, marginBottom: 12 }}>{e.desc} · {e.unidades} unidades</div>
             {[
-              { label: "Ingresos", val: fmt(e.ingresos), color: "#1a7a1a" },
+              { label: "Ingresos ventas", val: fmt(e.ingresosVentas), color: "#1a7a1a" },
+              { label: `Ingresos delivery (${e.unidadesConDelivery}u)`, val: fmt(e.ingresosDelivery), color: "#1a4a9e" },
+              { label: "Total ingresos", val: fmt(e.ingresos), color: "#1a7a1a" },
               { label: "Costos totales", val: fmt(e.costo), color: "#b30000" },
               { label: "Ganancia neta", val: fmt(e.ganancia), color: e.ganancia >= 0 ? "#1a7a1a" : "#b30000" },
               { label: "ROI", val: `${e.roi.toFixed(1)}%`, color: e.roi >= 0 ? "#1a7a1a" : "#b30000" },

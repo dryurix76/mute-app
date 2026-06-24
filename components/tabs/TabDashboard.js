@@ -116,6 +116,54 @@ export default function TabDashboard({ st, fmt, inventory, ventas, disponibles, 
           </div>
         )}
       </div>
+
+      {/* Últimos deliveries */}
+      {(() => {
+        const deliveries = ventas.filter((v) => (v.delivery || "Local") === "Local").slice(0, 6);
+        if (deliveries.length === 0) return null;
+        const ESTADOS = ["Entregado","Entregado","En camino","Conductor asignado","Pendiente"];
+        const CONDUCTORES = ["Carlos Pérez","María Gómez","Luis Hernández","Andrea Salas"];
+        return (
+          <div style={{ ...st.card, marginTop: 20 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={st.sTitle}>🛵 Últimos Deliveries</div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:"#7dd8c0", boxShadow:"0 0 6px #7dd8c0" }}/>
+                <span style={{ fontSize:11, color:G2 }}>Ridery 360 · Simulación</span>
+              </div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {deliveries.map((v, idx) => {
+                const seed = (v.id||"").toString().split("").reduce((a,c)=>a+c.charCodeAt(0),idx*7);
+                const estado = ESTADOS[seed % ESTADOS.length];
+                const conductor = CONDUCTORES[seed % CONDUCTORES.length];
+                const trackingId = `RID-${100000+(seed%900000)}`;
+                const estadoColor = {
+                  "Entregado": { bg:"#e8f5e8", text:"#1a7a1a" },
+                  "En camino": { bg:"#e8eefc", text:"#1a4a9e" },
+                  "Conductor asignado": { bg:"#fff8d6", text:"#8a6d00" },
+                  "Pendiente": { bg:"#f0f0ec", text:"#6E6E6E" },
+                }[estado] || { bg:"#f0f0ec", text:"#6E6E6E" };
+                return (
+                  <div key={v.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", background:"#f9f9f6", borderRadius:10, flexWrap:"wrap" }}>
+                    <div style={{ flex:1, minWidth:160 }}>
+                      <div style={{ fontSize:13, fontWeight:600 }}>{v.comprador}</div>
+                      <div style={{ fontSize:11, color:G2 }}>{MODELOS.find((m)=>m.id===v.modelo)?.nombre} · {v.fecha}</div>
+                    </div>
+                    <code style={{ fontSize:10, background:"#ebebeb", padding:"2px 7px", borderRadius:4, color:G1 }}>{trackingId}</code>
+                    <div style={{ fontSize:11, color:G1 }}>🏍 {conductor}</div>
+                    <span style={{ fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:20, background:estadoColor.bg, color:estadoColor.text, whiteSpace:"nowrap" }}>{estado}</span>
+                    <strong style={{ fontSize:12, color:"#1a7a1a", whiteSpace:"nowrap" }}>{fmt(v.costoDelivery || 5)}</strong>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ fontSize:11, color:G2, marginTop:12, textAlign:"center" }}>
+              Estados simulados — se conectarán en vivo cuando tengan acceso a la API corporativa de Ridery 360
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
