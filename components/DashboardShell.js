@@ -35,6 +35,7 @@ import VentaFormModal from "./modals/VentaFormModal";
 import InvFormModal from "./modals/InvFormModal";
 import GastoFormModal from "./modals/GastoFormModal";
 import ConfirmDeleteModal from "./modals/ConfirmDeleteModal";
+import ClaudioChat from "./ClaudioChat";
 
 export default function DashboardShell({
   inventory, setInventory,
@@ -410,6 +411,8 @@ export default function DashboardShell({
           }}
         />
       )}
+
+      <ClaudioChat />
     </div>
   );
 }
