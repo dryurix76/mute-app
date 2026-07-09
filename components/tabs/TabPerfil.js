@@ -7,6 +7,7 @@ export default function TabPerfil({
   st, currentUser, perfiles, userEmail,
   currency, setCurrency, exchangeRate, setExchangeRate,
   bcvFecha, bcvLoading, bcvError, onRefreshBcv, onRefreshPerfiles,
+  onRefresh,
 }) {
   const propio = perfiles.find((p) => p.nombre === currentUser) || {};
   const [telefono, setTelefono] = useState(propio.telefono || "");
@@ -22,6 +23,38 @@ export default function TabPerfil({
   const [nuevoCorreo, setNuevoCorreo] = useState("");
   const [correoMsg, setCorreoMsg] = useState("");
   const [correoSaving, setCorreoSaving] = useState(false);
+
+  // Reset de datos — doble confirmación
+  const [resetPaso, setResetPaso] = useState(0); // 0=oculto, 1=primer aviso, 2=segundo aviso
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMsg, setResetMsg] = useState("");
+
+  async function ejecutarReset() {
+    setResetLoading(true);
+    setResetMsg("");
+    try {
+      const res = await fetch("/api/reset-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmar: "BORRAR_TODO_MUTE" }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setResetMsg("✓ " + data.mensaje);
+        setResetPaso(0);
+        setTimeout(() => {
+          onRefresh?.();
+          setResetMsg("");
+        }, 2000);
+      } else {
+        setResetMsg("Error: " + (data.error || JSON.stringify(data.errores)));
+      }
+    } catch (e) {
+      setResetMsg("Error de red: " + e.message);
+    } finally {
+      setResetLoading(false);
+    }
+  }
 
   async function handleGuardarPerfil() {
     setSavingProfile(true);
@@ -137,6 +170,79 @@ export default function TabPerfil({
         <div style={{ fontSize:12, color:"#6E6E6E" }}>
           💡 El selector de moneda (USD / Bs) y la tasa de cambio BCV están disponibles en la barra superior del dashboard.
         </div>
+      </div>
+
+      {/* ZONA DE PELIGRO — Reset de datos */}
+      <div style={{ border: "2px solid #fca5a5", borderRadius: 12, padding: "20px 24px", background: "#fff5f5" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 18 }}>🗑️</span>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#b30000" }}>Zona de Peligro — Borrar toda la data</div>
+            <div style={{ fontSize: 12, color: "#666" }}>Elimina permanentemente ventas, inventario, gastos y deliveries. No se puede deshacer.</div>
+          </div>
+        </div>
+
+        {resetPaso === 0 && (
+          <button
+            onClick={() => setResetPaso(1)}
+            style={{ padding: "9px 18px", borderRadius: 8, border: "2px solid #ef4444", background: "#fff", color: "#ef4444", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            Borrar toda la data
+          </button>
+        )}
+
+        {resetPaso === 1 && (
+          <div style={{ background: "#fee2e2", borderRadius: 10, padding: "16px 18px" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#991b1b", marginBottom: 12 }}>
+              ⚠️ Primera confirmación — ¿Estás segura?
+            </div>
+            <div style={{ fontSize: 12, color: "#7f1d1d", marginBottom: 14, lineHeight: 1.6 }}>
+              Esto borrará:<br/>
+              • Todas las <strong>ventas</strong> registradas<br/>
+              • Todo el <strong>inventario</strong><br/>
+              • Todos los <strong>gastos</strong><br/>
+              • Todos los registros de <strong>delivery</strong>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setResetPaso(2)}
+                style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                Sí, entiendo — continuar
+              </button>
+              <button onClick={() => setResetPaso(0)}
+                style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", color: "#666", fontSize: 13, cursor: "pointer" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {resetPaso === 2 && (
+          <div style={{ background: "#7f1d1d", borderRadius: 10, padding: "16px 18px" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fef2f2", marginBottom: 12 }}>
+              🚨 Segunda confirmación — Última oportunidad
+            </div>
+            <div style={{ fontSize: 12, color: "#fca5a5", marginBottom: 16 }}>
+              Después de este paso no hay vuelta atrás. Todos los datos serán eliminados permanentemente de Supabase.
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={ejecutarReset}
+                disabled={resetLoading}
+                style={{ padding: "10px 22px", borderRadius: 8, border: "2px solid #fca5a5", background: "#ef4444", color: "#fff", fontSize: 13, fontWeight: 700, cursor: resetLoading ? "default" : "pointer" }}>
+                {resetLoading ? "Borrando..." : "🗑️ BORRAR TODO AHORA"}
+              </button>
+              <button onClick={() => setResetPaso(0)} disabled={resetLoading}
+                style={{ padding: "10px 18px", borderRadius: 8, border: "1px solid #fca5a5", background: "none", color: "#fca5a5", fontSize: 13, cursor: "pointer" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {resetMsg && (
+          <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: resetMsg.startsWith("✓") ? "#166534" : "#b30000", padding: "8px 12px", borderRadius: 8, background: resetMsg.startsWith("✓") ? "#f0fdf4" : "#fde8e8" }}>
+            {resetMsg}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -4,8 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 // Esta ruta corre SOLO en el servidor de Vercel, nunca en el navegador.
 // La llave privada de Google jamás se expone al cliente.
 
-const SHEET_ID = "19ly6AcCLr9NbTHGzeY-C5YSMwTJPlcfmviAd_ETYpqs";
-const SHEET_GID = "826663950";
+const SHEET_ID = "1tQ5whRjIXHZfDtNDOQhKM00Ci5JckDa7ydmchWhY6YQ";
+const SHEET_GID = "953881298";
 
 // Mapeo de nombre de modelo en el Sheet -> id interno usado en el dashboard
 const MODELO_MAP = {

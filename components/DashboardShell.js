@@ -439,6 +439,7 @@ export default function DashboardShell({
               bcvFecha={bcvFecha} bcvLoading={bcvLoading} bcvError={bcvError}
               onRefreshBcv={cargarTasaBCV}
               onRefreshPerfiles={cargarPerfiles}
+              onRefresh={onRefresh}
             />
           )}
         </div>
