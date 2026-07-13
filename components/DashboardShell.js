@@ -56,23 +56,21 @@ export default function DashboardShell({
   const [stockNotifSent, setStockNotifSent] = useState(false);
 
   async function notificarStockBajo(alertas) {
-    if (stockNotifSent || alertas.length === 0) return;
-    const telefonos = perfiles.map(p => p.telefono).filter(Boolean);
-    if (telefonos.length === 0) return;
-    try {
-      const res = await fetch("/api/whatsapp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tipo: "stock_bajo", datos: { alertas, telefonos } }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setStockNotifSent(true);
-        console.log(`Notificación de stock enviada a ${data.exitosos} número(s)`);
-      }
-    } catch (e) {
-      console.warn("No se pudo enviar notificación de stock:", e.message);
+    if (alertas.length === 0) return;
+    // Construir mensaje con la lista de alertas
+    const lista = alertas.map(a => `• ${a.nombre?.split(" ")[0] || a.modelo} talla ${a.talla}: ${a.cantidad === 0 ? "AGOTADA" : `${a.cantidad} restante${a.cantidad > 1 ? "s" : ""}`}`).join("\n");
+    const msg = encodeURIComponent(`⚠️ *MUTE — Alerta de Stock Bajo*\n\nLas siguientes combinaciones tienen ≤2 unidades:\n\n${lista}\n\nRevisa el inventario en el dashboard.`);
+    // Abrir WhatsApp Web con el mensaje prellenado
+    // Intentar enviar a los teléfonos de los perfiles registrados
+    const tels = perfiles.map(p => p.telefono).filter(Boolean);
+    if (tels.length > 0) {
+      const telLimpio = tels[0].replace(/\D/g, "").replace(/^0/, "58");
+      window.open(`https://wa.me/${telLimpio}?text=${msg}`, "_blank");
+    } else {
+      window.open(`https://wa.me/?text=${msg}`, "_blank");
     }
+    setStockNotifSent(true);
+    setTimeout(() => setStockNotifSent(false), 10000);
   }
 
   async function cargarPerfiles() {

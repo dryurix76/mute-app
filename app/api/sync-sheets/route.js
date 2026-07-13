@@ -204,9 +204,55 @@ async function sincronizar() {
   if (errVentasExist) throw errVentasExist;
   const codigosYaVendidos = new Set((ventasExistentes || []).map((v) => v.codigo));
 
-  const ventasCandidatas = ventas.filter((v) => !codigosYaVendidos.has(v.codigo));
+  // ── INVENTARIO: insertar prendas que no existen en BD ──────────────────
+  // Cuando el inventario está vacío (ej: después de un reset), hay que crear
+  // todas las prendas del Sheet antes de poder insertar las ventas.
+  const itemsNuevos = inventario.filter(
+    (item) => item.codigo && !codigosEnInventario.has(item.codigo.trim().toUpperCase())
+  );
 
-  // Separa las que SÍ tienen un código válido en inventario de las que NO
+  let inventarioInsertado = 0;
+  let errorInventario = null;
+
+  if (itemsNuevos.length > 0) {
+    const itemsParaInsertar = itemsNuevos.map((item) => ({
+      codigo: item.codigo,
+      nombre: item.modelo ? (
+        { cosmopolitan: "Cosmopolitan", espressomartini: "Espresso Martini", cubalibre: "Cuba Libre", negroni: "Negroni", moscowmule: "Moscow Mule" }[item.modelo] || item.modelo
+      ) : item.codigo,
+      modelo: item.modelo,
+      talla: item.talla || "M",
+      drop: "DROP 001",
+      precio_costo: item.precio_costo || 12.65,
+      precio_venta: item.precio_venta || 30,
+    }));
+
+    const { error: errInvInsert } = await supabaseAdmin
+      .from("inventario")
+      .insert(itemsParaInsertar);
+
+    if (errInvInsert) {
+      errorInventario = errInvInsert.message;
+    } else {
+      inventarioInsertado = itemsNuevos.length;
+      // Actualizar el set de códigos para que las ventas puedan entrar
+      itemsNuevos.forEach((i) => codigosEnInventario.add(i.codigo.trim().toUpperCase()));
+    }
+  }
+
+  // Actualizar precios de prendas que sí existen
+  const itemsExistentes = inventario.filter(
+    (item) => item.codigo && codigosEnInventario.has(item.codigo.trim().toUpperCase()) && !itemsNuevos.find(n => n.codigo === item.codigo)
+  );
+  for (const item of itemsExistentes) {
+    await supabaseAdmin
+      .from("inventario")
+      .update({ precio_costo: item.precio_costo, precio_venta: item.precio_venta })
+      .eq("codigo", item.codigo);
+  }
+
+  // ── VENTAS: insertar las que tienen código en inventario ────────────────
+  const ventasCandidatas = ventas.filter((v) => !codigosYaVendidos.has(v.codigo));
   const ventasNuevas = ventasCandidatas.filter((v) => codigosEnInventario.has(v.codigo.trim().toUpperCase()));
   const ventasSinInventario = ventasCandidatas.filter((v) => !codigosEnInventario.has(v.codigo.trim().toUpperCase()));
 
@@ -221,21 +267,11 @@ async function sincronizar() {
     }
   }
 
-  // Actualiza precios de inventario si cambiaron en el Sheet (no crea prendas nuevas
-  // para evitar duplicar códigos si el Sheet tiene variaciones de formato)
-  let inventarioActualizado = 0;
-  for (const item of inventario) {
-    if (!item.codigo) continue;
-    const { error: errUpdate } = await supabaseAdmin
-      .from("inventario")
-      .update({ precio_costo: item.precio_costo, precio_venta: item.precio_venta })
-      .eq("codigo", item.codigo);
-    if (!errUpdate) inventarioActualizado += 1;
-  }
-
   return {
     ok: true,
     filasLeidas: rows.length - 1,
+    inventarioInsertado,
+    errorInventario,
     ventasNuevas: ventasInsertadas,
     inventarioRevisado: inventario.length,
     codigosYaVendidosEnBD: codigosYaVendidos.size,

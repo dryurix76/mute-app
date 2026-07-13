@@ -11,6 +11,8 @@ export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDe
   const [filterDelivery, setFilterDelivery] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [seleccionados, setSeleccionados] = useState(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const filteredVentas = useMemo(() => ventas.filter((v) => {
     if (filterVendedora !== "all" && v.vendedora !== filterVendedora) return false;
@@ -112,6 +114,27 @@ export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDe
         </div>
       </div>
 
+      {/* Barra de selección múltiple */}
+      {seleccionados.size > 0 && (
+        <div style={{ background:"#000", borderRadius:10, padding:"10px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+          <span style={{ color:"#FFF200", fontWeight:700, fontSize:13 }}>{seleccionados.size} seleccionada{seleccionados.size>1?"s":""}</span>
+          <button style={{ padding:"6px 14px", borderRadius:6, border:"none", background:"#FFF200", color:"#000", fontSize:12, fontWeight:700, cursor:"pointer" }}
+            onClick={() => setSeleccionados(new Set())}>Deseleccionar todo</button>
+          {!confirmBulkDelete ? (
+            <button style={{ padding:"6px 14px", borderRadius:6, border:"1px solid #ef4444", background:"none", color:"#ef4444", fontSize:12, fontWeight:700, cursor:"pointer" }}
+              onClick={() => setConfirmBulkDelete(true)}>🗑️ Eliminar seleccionadas</button>
+          ) : (
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ color:"#fca5a5", fontSize:12 }}>¿Confirmas eliminar {seleccionados.size} venta{seleccionados.size>1?"s":""}?</span>
+              <button style={{ padding:"6px 14px", borderRadius:6, border:"none", background:"#ef4444", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}
+                onClick={() => { seleccionados.forEach(id => onDelete(id)); setSeleccionados(new Set()); setConfirmBulkDelete(false); }}>Sí, eliminar</button>
+              <button style={{ padding:"6px 14px", borderRadius:6, border:"1px solid #666", background:"none", color:"#ccc", fontSize:12, cursor:"pointer" }}
+                onClick={() => setConfirmBulkDelete(false)}>Cancelar</button>
+            </div>
+          )}
+        </div>
+      )}
+
       {filteredVentas.length === 0 && (
         <div style={{ ...st.card, marginBottom: 16, textAlign: "center", padding: 24, color: G2 }}>
           {ventas.length === 0 ? "Aún no hay ventas registradas. Usa el botón \"+ Registrar Venta\"." : "Sin resultados para los filtros aplicados."}
@@ -122,7 +145,16 @@ export default function TabVentas({ st, fmt, ventas, totalIngresos, onEdit, onDe
         <div style={st.card}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr>{["Código","Modelo","Comprador","Tel","Vendedora","Plataforma","Pago","Items","Delivery","Fecha","Monto","Factura","Acciones"].map((h)=><th key={h} style={st.th}>{h}</th>)}</tr></thead>
+              <thead>
+                <tr>
+                  <th style={{ ...st.th, width:36 }}>
+                    <input type="checkbox"
+                      checked={seleccionados.size === filteredVentas.length && filteredVentas.length > 0}
+                      onChange={e => setSeleccionados(e.target.checked ? new Set(filteredVentas.map(v=>v.id)) : new Set())}/>
+                  </th>
+                  {["Código","Modelo","Comprador","Tel","Vendedora","Plataforma","Pago","Items","Delivery","Fecha","Monto","Factura","Acciones"].map((h)=><th key={h} style={st.th}>{h}</th>)}
+                </tr>
+              </thead>
               <tbody>
                 {filteredVentas.map((v) => {
                   const modelo = MODELOS.find((m)=>m.id===v.modelo)?.nombre||"";
@@ -187,7 +219,11 @@ ${[["Código",v.codigo],["Modelo",modelo],["Comprador",v.comprador],["Teléfono"
                     window.open(`mailto:${v.correo||""}?subject=${asunto}&body=${cuerpo}`);
                   }
                   return (
-                  <tr key={v.id}>
+                  <tr key={v.id} style={{ background: seleccionados.has(v.id) ? "#fffbeb" : undefined }}>
+                    <td style={{ ...st.td, width:36, textAlign:"center" }}>
+                      <input type="checkbox" checked={seleccionados.has(v.id)}
+                        onChange={e => { const s=new Set(seleccionados); e.target.checked?s.add(v.id):s.delete(v.id); setSeleccionados(s); }}/>
+                    </td>
                     <td style={st.td}><code style={{ background:"#f5f5f0",padding:"2px 5px",borderRadius:3,fontSize:11 }}>{v.codigo}</code></td>
                     <td style={st.td}>{modelo||"—"}</td>
                     <td style={st.td}><div style={{ fontWeight:600 }}>{v.comprador}</div>{v.correo&&<div style={{ fontSize:11,color:G2 }}>{v.correo}</div>}</td>

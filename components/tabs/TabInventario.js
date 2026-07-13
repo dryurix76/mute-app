@@ -16,6 +16,8 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
   const [invPerPage, setInvPerPage] = useState(20);
   const [ampliado, setAmpliado] = useState(null);
   const [showSugerencias, setShowSugerencias] = useState(false);
+  const [seleccionados, setSeleccionados] = useState(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const filteredInv = useMemo(()=>inventory.filter((i)=>{
     if(filterModelo!=="all"&&i.modelo!==filterModelo)return false;
@@ -138,7 +140,25 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
 
       <div style={st.card}>
         <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12 }}>
-          <div style={st.sTitle}>Listado ({filteredInv.length})</div>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={st.sTitle}>Listado ({filteredInv.length})</div>
+            {seleccionados.size>0 && (
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:12, fontWeight:700, color:"#d97706" }}>{seleccionados.size} seleccionada{seleccionados.size>1?"s":""}</span>
+                {!confirmBulkDelete ? (
+                  <button style={{ ...st.btnSm("#fee"), fontSize:11, padding:"3px 10px" }} onClick={()=>setConfirmBulkDelete(true)}>🗑️ Eliminar</button>
+                ) : (
+                  <>
+                    <span style={{ fontSize:11, color:"#b30000" }}>¿Confirmar?</span>
+                    <button style={{ ...st.btnSm(), fontSize:11, padding:"3px 10px", background:"#ef4444", color:"#fff", border:"none" }}
+                      onClick={()=>{ seleccionados.forEach(id=>onDelete({id})); setSeleccionados(new Set()); setConfirmBulkDelete(false); }}>Sí</button>
+                    <button style={{ ...st.btnSm(), fontSize:11, padding:"3px 10px" }} onClick={()=>setConfirmBulkDelete(false)}>No</button>
+                  </>
+                )}
+                <button style={{ ...st.btnSm(), fontSize:11, padding:"3px 10px" }} onClick={()=>setSeleccionados(new Set())}>✕</button>
+              </div>
+            )}
+          </div>
           <div style={{ display:"flex",gap:8,alignItems:"center" }}>
             <button style={{ ...st.btnSm(),padding:"4px 12px" }} onClick={()=>setInvPage(p=>Math.max(1,p-1))} disabled={invPage===1}>‹</button>
             <span style={{ fontSize:13,color:G1 }}>{invPage}/{totalPages}</span>
@@ -147,13 +167,26 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
         </div>
         <div style={{ overflowX:"auto" }}>
           <table style={{ width:"100%",borderCollapse:"collapse" }}>
-            <thead><tr>{["","Código","Modelo","Talla","Drop","Status","Costo","Venta",""].map((h,i)=><th key={i} style={st.th}>{h}</th>)}</tr></thead>
+            <thead>
+              <tr>
+                <th style={{ ...st.th, width:36 }}>
+                  <input type="checkbox"
+                    checked={seleccionados.size===pageItems.length&&pageItems.length>0}
+                    onChange={e=>setSeleccionados(e.target.checked?new Set(pageItems.map(i=>i.id)):new Set())}/>
+                </th>
+                {["","Código","Modelo","Talla","Drop","Status","Costo","Venta",""].map((h,i)=><th key={i} style={st.th}>{h}</th>)}
+              </tr>
+            </thead>
             <tbody>
               {pageItems.map((i)=>{
                 const sold=vendidas.includes(i.codigo);
                 const m=MODELOS.find(mm=>mm.id===i.modelo);
                 return (
-                  <tr key={i.id}>
+                  <tr key={i.id} style={{ background:seleccionados.has(i.id)?"#fffbeb":undefined }}>
+                    <td style={{ ...st.td, width:36, textAlign:"center" }}>
+                      <input type="checkbox" checked={seleccionados.has(i.id)}
+                        onChange={e=>{ const s=new Set(seleccionados); e.target.checked?s.add(i.id):s.delete(i.id); setSeleccionados(s); }}/>
+                    </td>
                     <td style={{ ...st.td,width:40,padding:"6px 8px" }}>
                       {m?.img&&<div onClick={()=>setAmpliado(m.img)} style={{ position:"relative",width:32,height:32,borderRadius:4,overflow:"hidden",cursor:"zoom-in",flexShrink:0 }}><Image src={m.img} alt={i.nombre} fill style={{ objectFit:"cover" }} sizes="32px"/></div>}
                     </td>

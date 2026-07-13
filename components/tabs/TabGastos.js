@@ -45,14 +45,14 @@ export default function TabGastos({ st, fmt: fmtProp, gastos, totalIngresos, onN
   return (
     <div>
       {/* Header financiero */}
-      <div style={{ background:"#000", borderRadius:16, padding:"24px 28px", marginBottom:20, color:"#fff" }}>
+      <div style={{ background:"#f8fafc", border:"1.5px solid #e2e8f0", borderRadius:16, padding:"24px 28px", marginBottom:20 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:16 }}>
           <div>
-            <div style={{ fontSize:11, color:"#555", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:6 }}>Balance Neto del Período</div>
-            <div style={{ fontSize:42, fontWeight:700, color:balance>=0?"#6BCB77":"#FF6B6B", letterSpacing:"-1px", lineHeight:1 }}>
+            <div style={{ fontSize:11, color:G2, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:6 }}>Balance Neto del Período</div>
+            <div style={{ fontSize:42, fontWeight:700, color:balance>=0?"#15803d":"#dc2626", letterSpacing:"-1px", lineHeight:1 }}>
               {fmt(balance)}
             </div>
-            <div style={{ fontSize:12, color:"#555", marginTop:8 }}>Ingresos {fmt(totalIngresos)} · Gastos {fmt(totalGastos)}</div>
+            <div style={{ fontSize:12, color:G2, marginTop:8 }}>Ingresos {fmt(totalIngresos)} · Gastos {fmt(totalGastos)}</div>
           </div>
           <div style={{ display:"flex", gap:16, flexWrap:"wrap" }}>
             {[
@@ -60,8 +60,8 @@ export default function TabGastos({ st, fmt: fmtProp, gastos, totalIngresos, onN
               { label:"% de Ingresos", val:`${pctGastos}%`, color:pctGastos>70?"#FF6B6B":"#6BCB77" },
               { label:"Promedio Mensual", val:fmt(promedioMensual), color:"#4D96FF" },
             ].map(s=>(
-              <div key={s.label} style={{ background:"#0d0d0d", borderRadius:10, padding:"12px 16px", minWidth:120 }}>
-                <div style={{ fontSize:10, color:"#555", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>{s.label}</div>
+              <div key={s.label} style={{ background:"#fff", borderRadius:10, padding:"12px 16px", minWidth:120 }}>
+                <div style={{ fontSize:10, color:G2, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>{s.label}</div>
                 <div style={{ fontSize:18, fontWeight:700, color:s.color }}>{s.val}</div>
               </div>
             ))}
@@ -70,10 +70,10 @@ export default function TabGastos({ st, fmt: fmtProp, gastos, totalIngresos, onN
 
         {/* Barra de progreso gastos vs ingresos */}
         <div style={{ marginTop:20 }}>
-          <div style={{ height:8, background:"#111", borderRadius:4, overflow:"hidden" }}>
+          <div style={{ height:8, background:"#e2e8f0", borderRadius:4, overflow:"hidden" }}>
             <div style={{ height:8, width:`${Math.min(100,pctGastos)}%`, background:pctGastos>80?"#FF6B6B":pctGastos>60?"#FFA94D":"#6BCB77", borderRadius:4, transition:"width .5s" }}/>
           </div>
-          <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"#444", marginTop:4 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:G2, marginTop:4 }}>
             <span>0%</span><span style={{ color:pctGastos>70?"#FF6B6B":"#6BCB77" }}>{pctGastos}% de ingresos gastado</span><span>100%</span>
           </div>
         </div>

@@ -39,21 +39,24 @@ export default function TabEstadisticas({ st, fmt, inventory, ventas, disponible
   return (
     <div>
       <div style={st.statsRow}>
-        {ventasPorVendedora.map((v)=>(
-          <div key={v.name} style={{ ...st.statCard, borderTop:"3px solid #FFF200" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-              <div style={{ width:36, height:36, borderRadius:"50%", background:"#FFF200", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700 }}>{v.name[0]}</div>
-              <div style={{ fontSize:15, fontWeight:600 }}>{v.name}</div>
-            </div>
-            <div style={{ fontSize:11, color:G2, textTransform:"uppercase", marginBottom:4 }}>Unidades vendidas</div>
-            <div style={{ fontSize:24, fontWeight:700 }}>{v.count}</div>
-            <div style={{ fontSize:12, color:G1 }}>{fmt(v.ingresos)} en ingresos</div>
+        <div style={{ ...st.statCard, borderTop:"3px solid #FFF200" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+            <div style={{ width:36, height:36, borderRadius:"50%", background:"#FFF200", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700 }}>M</div>
+            <div style={{ fontSize:15, fontWeight:600 }}>MUTE</div>
           </div>
-        ))}
-        <div style={st.statCard}>
+          <div style={{ fontSize:11, color:G2, textTransform:"uppercase", marginBottom:4 }}>Ventas totales</div>
+          <div style={{ fontSize:24, fontWeight:700 }}>{ventas.length}</div>
+          <div style={{ fontSize:12, color:G1 }}>{fmt(totalIngresos)} en ingresos</div>
+        </div>
+        <div style={{ ...st.statCard, borderTop:"3px solid #4D96FF" }}>
           <div style={{ fontSize:11, color:G2, textTransform:"uppercase", marginBottom:6 }}>Margen bruto</div>
           <div style={{ fontSize:24, fontWeight:700 }}>{fmt(margen)}</div>
           <div style={{ fontSize:12, color:G1 }}>{ventas.length>0&&totalIngresos?Math.round(margen/totalIngresos*100):0}% del total</div>
+        </div>
+        <div style={{ ...st.statCard, borderTop:"3px solid #6BCB77" }}>
+          <div style={{ fontSize:11, color:G2, textTransform:"uppercase", marginBottom:6 }}>Ticket promedio</div>
+          <div style={{ fontSize:24, fontWeight:700 }}>{fmt(ventas.length ? totalIngresos/ventas.length : 0)}</div>
+          <div style={{ fontSize:12, color:G1 }}>por venta</div>
         </div>
       </div>
 
