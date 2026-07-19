@@ -11,6 +11,7 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterTalla, setFilterTalla] = useState("all");
   const [filterDrop, setFilterDrop] = useState("all");
+  const [filterUbicacion, setFilterUbicacion] = useState("all");
   const [search, setSearch] = useState("");
   const [invPage, setInvPage] = useState(1);
   const [invPerPage, setInvPerPage] = useState(20);
@@ -23,12 +24,13 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
     if(filterModelo!=="all"&&i.modelo!==filterModelo)return false;
     if(filterTalla!=="all"&&i.talla!==filterTalla)return false;
     if(filterDrop!=="all"&&(i.drop||"DROP 001")!==filterDrop)return false;
+    if(filterUbicacion!=="all"&&(i.ubicacion||"Casa")!==filterUbicacion)return false;
     const sold=vendidas.includes(i.codigo);
     if(filterStatus==="disponible"&&sold)return false;
     if(filterStatus==="no_disponible"&&!sold)return false;
     if(search){const q=search.toLowerCase();if(!i.codigo.toLowerCase().includes(q)&&!i.nombre.toLowerCase().includes(q)&&!i.talla.toLowerCase().includes(q))return false;}
     return true;
-  }),[inventory,vendidas,filterModelo,filterStatus,filterTalla,filterDrop,search]);
+  }),[inventory,vendidas,filterModelo,filterStatus,filterTalla,filterDrop,filterUbicacion,search]);
 
   const masVendidos = useMemo(()=>{
     const counts={};
@@ -122,6 +124,11 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
           <option value="all">Drop</option>
           <option value="DROP 001">DROP 001</option>
         </select>
+        <select style={{ ...st.sel,width:130 }} value={filterUbicacion} onChange={(e)=>{setFilterUbicacion(e.target.value);setInvPage(1);}}>
+          <option value="all">Ubicación</option>
+          <option value="Casa">Casa</option>
+          <option value="Oficina">Oficina</option>
+        </select>
         <select style={{ ...st.sel,width:140 }} value={filterStatus} onChange={(e)=>{setFilterStatus(e.target.value);setInvPage(1);}}>
           <option value="all">Status</option>
           <option value="disponible">Disponible</option>
@@ -174,7 +181,7 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
                     checked={seleccionados.size===pageItems.length&&pageItems.length>0}
                     onChange={e=>setSeleccionados(e.target.checked?new Set(pageItems.map(i=>i.id)):new Set())}/>
                 </th>
-                {["","Código","Modelo","Talla","Drop","Status","Costo","Venta",""].map((h,i)=><th key={i} style={st.th}>{h}</th>)}
+                {["","Código","Modelo","Talla","Drop","Ubicación","Status","Costo","Venta",""].map((h,i)=><th key={i} style={st.th}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -194,6 +201,14 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
                     <td style={st.td}><span style={{ display:"flex",alignItems:"center",gap:5 }}><span style={{ width:8,height:8,borderRadius:"50%",background:MODELO_COLORS[i.modelo]||"#ccc",display:"inline-block" }}/>{i.nombre}</span></td>
                     <td style={st.td}><strong>{i.talla}</strong></td>
                     <td style={st.td}>{i.drop||"DROP 001"}</td>
+                    <td style={st.td}>
+                      <select value={i.ubicacion||"Casa"}
+                        onChange={e => onEdit({...i, ubicacion: e.target.value})}
+                        style={{ fontSize:11, padding:"2px 6px", borderRadius:4, border:"1px solid #ddd", background:"#f9f9f6", cursor:"pointer" }}>
+                        <option value="Casa">🏠 Casa</option>
+                        <option value="Oficina">🏢 Oficina</option>
+                      </select>
+                    </td>
                     <td style={st.td}><span style={st.badge(sold)}>{sold?"NO DISPONIBLE":"DISPONIBLE"}</span></td>
                     <td style={st.td}>{fmt(i.precio_costo)}</td>
                     <td style={st.td}><strong>{fmt(i.precio_venta)}</strong></td>

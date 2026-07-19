@@ -244,6 +244,24 @@ export default function TabPerfil({
           </div>
         )}
       </div>
+
+      {/* Backup de datos */}
+      <div style={{ border: "1.5px solid #bbf7d0", borderRadius: 12, padding: "20px 24px", background: "#f0fdf4" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 18 }}>💾</span>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#166534" }}>Backup — Exportar toda la data</div>
+            <div style={{ fontSize: 12, color: "#4ade80" }}>Descarga un archivo JSON con inventario, ventas, gastos y deliveries.</div>
+          </div>
+        </div>
+        <a href="/api/backup" download
+          style={{ display:"inline-block", padding:"9px 18px", borderRadius:8, border:"2px solid #16a34a", background:"#16a34a", color:"#fff", fontSize:13, fontWeight:700, textDecoration:"none", cursor:"pointer" }}>
+          ⬇️ Descargar Backup Completo
+        </a>
+        <div style={{ fontSize: 11, color: "#166534", marginTop: 10 }}>
+          El archivo incluye todos los registros actuales. Guárdalo en un lugar seguro antes de hacer cualquier cambio importante.
+        </div>
+      </div>
     </div>
   );
 }

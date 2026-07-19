@@ -58,22 +58,22 @@ export default function TabDelivery({ st, fmt, ventas }) {
   return (
     <div>
       {/* Header estilo Ridery 360 */}
-      <div style={{ background:"#13131f", borderRadius:12, padding:"14px 20px", marginBottom:20, display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
-        <div style={{ fontSize:22, fontWeight:700, color:"#fff", fontFamily:"sans-serif" }}>
-          Ridery<span style={{ color:"#7dd8c0" }}>360</span>
+      <div style={{ background:"#f8fafc", borderRadius:12, padding:"14px 20px", marginBottom:20, display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
+        <div style={{ fontSize:22, fontWeight:700, color:"#1a1a1a", fontFamily:"sans-serif" }}>
+          Ridery<span style={{ color:"#0f766e" }}>360</span>
         </div>
-        <div style={{ width:1, height:30, background:"#333" }}/>
+        <div style={{ width:1, height:30, background:"#e5e5e0" }}/>
         <div style={{ flex:1, minWidth:160 }}>
-          <div style={{ fontSize:12, color:"#aaa" }}>Gestión de envíos locales · Caracas</div>
-          <div style={{ fontSize:11, color:"#555" }}>Simulación — lista para conectar con la API corporativa</div>
+          <div style={{ fontSize:12, color:"#666" }}>Gestión de envíos locales · Caracas</div>
+          <div style={{ fontSize:11, color:"#888" }}>Simulación — lista para conectar con la API corporativa</div>
         </div>
         <div style={{ display:"flex", gap:16 }}>
           {[
-            { label:"Balance Ridery", val:`$${(stats.total*2).toFixed(2)}`, color:"#7dd8c0" },
-            { label:"Envíos del mes", val:stats.total, color:"#fff" },
+            { label:"Balance Ridery", val:`$${(stats.total*2).toFixed(2)}`, color:"#0f766e" },
+            { label:"Envíos del mes", val:stats.total, color:"#1a1a1a" },
           ].map((s)=>(
             <div key={s.label} style={{ textAlign:"right" }}>
-              <div style={{ fontSize:11, color:"#555" }}>{s.label}</div>
+              <div style={{ fontSize:11, color:"#888" }}>{s.label}</div>
               <div style={{ fontSize:18, fontWeight:700, color:s.color }}>{s.val}</div>
             </div>
           ))}
@@ -177,8 +177,8 @@ export default function TabDelivery({ st, fmt, ventas }) {
 
         {/* Panel derecho estilo Ridery */}
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div style={{ background:"#13131f", borderRadius:12, padding:20, color:"#fff" }}>
-            <div style={{ fontSize:13, fontWeight:700, marginBottom:14, color:"#7dd8c0" }}>📊 Resumen Ridery 360</div>
+          <div style={{ background:"#f8fafc", borderRadius:12, padding:20, color:"#1a1a1a" }}>
+            <div style={{ fontSize:13, fontWeight:700, marginBottom:14, color:"#0f766e" }}>📊 Resumen Ridery 360</div>
             {RIDERY_ESTADOS.map((e)=>{
               const c=pedidos.filter((p)=>p.estado===e).length;
               const pct=pedidos.length?Math.round(c/pedidos.length*100):0;
@@ -186,29 +186,29 @@ export default function TabDelivery({ st, fmt, ventas }) {
               return (
                 <div key={e} style={{ marginBottom:10 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, marginBottom:3 }}>
-                    <span style={{ color:"#ccc" }}>{e}</span>
+                    <span style={{ color:"#666" }}>{e}</span>
                     <span style={{ color:clr.text, fontWeight:700 }}>{c} ({pct}%)</span>
                   </div>
-                  <div style={{ height:4, background:"#333", borderRadius:4 }}>
+                  <div style={{ height:4, background:"#e5e5e0", borderRadius:4 }}>
                     <div style={{ height:4, width:`${pct}%`, background:clr.text, borderRadius:4, transition:"width .3s" }}/>
                   </div>
                 </div>
               );
             })}
-            <div style={{ borderTop:"1px solid #333", marginTop:14, paddingTop:14 }}>
+            <div style={{ borderTop:"1px solid #e5e5e0", marginTop:14, paddingTop:14 }}>
               <div style={{ fontSize:11, color:"#888", marginBottom:8 }}>Métodos de pago</div>
               {FORMAS_PAGO_RIDERY.map((f)=>{
                 const c=pedidos.filter((p)=>p.formaPago===f).length;
                 if(!c)return null;
-                return <div key={f} style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#ccc", marginBottom:4 }}><span>{f}</span><strong>{c}</strong></div>;
+                return <div key={f} style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#666", marginBottom:4 }}><span>{f}</span><strong>{c}</strong></div>;
               })}
             </div>
-            <div style={{ borderTop:"1px solid #333", marginTop:14, paddingTop:14 }}>
+            <div style={{ borderTop:"1px solid #e5e5e0", marginTop:14, paddingTop:14 }}>
               <div style={{ display:"flex", justifyContent:"space-between", fontSize:12 }}>
                 <span style={{ color:"#888" }}>Total ingresos delivery</span>
-                <strong style={{ color:"#7dd8c0" }}>{fmt(stats.ingresosDelivery)}</strong>
+                <strong style={{ color:"#0f766e" }}>{fmt(stats.ingresosDelivery)}</strong>
               </div>
-              <div style={{ fontSize:10, color:"#555", marginTop:4 }}>A ${COSTO_DELIVERY} por pedido local</div>
+              <div style={{ fontSize:10, color:"#888", marginTop:4 }}>A ${COSTO_DELIVERY} por pedido local</div>
             </div>
           </div>
 

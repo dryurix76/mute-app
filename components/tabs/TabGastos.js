@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { G1, G2, GASTO_CONCEPTOS } from "../../lib/constants";
 
@@ -11,6 +12,28 @@ function fmt(n) { return `$${Number(n||0).toLocaleString("en-US",{minimumFractio
 
 export default function TabGastos({ st, fmt: fmtProp, gastos, totalIngresos, onNew, onEdit, onDelete }) {
   const [vistaTab, setVistaTab] = useState("resumen");
+
+  function exportGastosExcel() {
+    const rows = gastos.map(g=>({ Fecha:g.fecha, Proveedor:g.proveedor, Concepto:g.concepto, "Método de Pago":g.pago, "Cantidad ($)":g.cantidad, Factura:g.factura||"" }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = [{wch:12},{wch:20},{wch:18},{wch:16},{wch:12},{wch:30}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+    XLSX.writeFile(wb, `mute_gastos_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  function exportGastosPDF() {
+    const totalGastos = gastos.reduce((s,g)=>s+g.cantidad,0);
+    const filas = gastos.map(g=>`<tr><td>${g.fecha||"—"}</td><td>${g.proveedor}</td><td>${g.concepto}</td><td>${g.pago}</td><td style="text-align:right;font-weight:600;color:#b30000">$${Number(g.cantidad).toFixed(2)}</td></tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>mute. Gastos</title>
+    <style>body{font-family:'Helvetica Neue',sans-serif;padding:32px;color:#1a1a1a}h1{font-size:22px;margin-bottom:4px}p{font-size:12px;color:#888;margin-bottom:24px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#000;color:#FFF200;padding:8px 10px;text-align:left}td{padding:8px 10px;border-bottom:1px solid #f0f0ec}.total{font-weight:700;font-size:14px;color:#b30000}</style>
+    </head><body><h1>mute. — Registro de Gastos</h1><p>Exportado el ${new Date().toLocaleDateString("es-VE")} · ${gastos.length} registros</p>
+    <table><thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Método</th><th>Monto</th></tr></thead>
+    <tbody>${filas}<tr><td colspan="4" class="total">TOTAL</td><td style="text-align:right;font-weight:700;font-size:14px;color:#b30000">$${totalGastos.toFixed(2)}</td></tr></tbody></table>
+    </body></html>`;
+    const w = window.open("","_blank");
+    if(w){w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),400);}
+  }
 
   const totalGastos = gastos.reduce((s,g)=>s+g.cantidad,0);
   const balance = totalIngresos - totalGastos;
@@ -93,7 +116,11 @@ export default function TabGastos({ st, fmt: fmtProp, gastos, totalIngresos, onN
       </div>
 
       <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:16 }}>
-        <button style={st.btn(true)} onClick={onNew}>+ Registrar Gasto</button>
+        <div style={{ display:"flex", gap:8 }}>
+          <button style={st.btnSm()} onClick={exportGastosExcel}>📊 Excel</button>
+          <button style={st.btnSm()} onClick={exportGastosPDF}>📄 PDF</button>
+          <button style={st.btn(true)} onClick={onNew}>+ Registrar Gasto</button>
+        </div>
       </div>
 
       {vistaTab==="resumen" && (

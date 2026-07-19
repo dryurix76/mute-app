@@ -1,5 +1,6 @@
 "use client";
 import { useMemo } from "react";
+import * as XLSX from "xlsx";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { G1, G2, TALLAS, MODELOS, edadBracket, EDAD_BRACKETS } from "../../lib/constants";
 
@@ -7,6 +8,52 @@ const COLORS = ["#FFF200","#4D96FF","#FF6B6B","#6BCB77","#B983FF","#FFA94D","#E1
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 export default function TabEstadisticas({ st, fmt, inventory, ventas, disponibles, margen, totalIngresos }) {
+
+  function exportEstadisticasExcel() {
+    const wb = XLSX.utils.book_new();
+    // Hoja 1: Resumen
+    const resumen = [
+      { Métrica:"Total ventas", Valor:ventas.length },
+      { Métrica:"Ingresos totales", Valor:`$${totalIngresos.toFixed(2)}` },
+      { Métrica:"Margen bruto", Valor:`$${margen.toFixed(2)}` },
+      { Métrica:"Ticket promedio", Valor:`$${ventas.length?( totalIngresos/ventas.length).toFixed(2):"0.00"}` },
+      { Métrica:"Inventario disponible", Valor:disponibles.length },
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumen), "Resumen");
+    // Hoja 2: Ventas por modelo
+    const porModelo = MODELOS.map(m=>({ Modelo:m.nombre, Vendidas:ventas.filter(v=>v.modelo===m.id).length }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(porModelo), "Por Modelo");
+    // Hoja 3: Ventas detalle
+    const detalle = ventas.map(v=>({ Fecha:v.fecha, Código:v.codigo, Modelo:MODELOS.find(m=>m.id===v.modelo)?.nombre||v.modelo, Comprador:v.comprador, Plataforma:v.plataforma, Pago:v.pago, Monto:v.monto }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalle), "Detalle Ventas");
+    XLSX.writeFile(wb, `mute_estadisticas_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  function exportEstadisticasPDF() {
+    const porModelo = MODELOS.map(m=>({ nombre:m.nombre, v:ventas.filter(v=>v.modelo===m.id).length }));
+    const porPago = {};
+    ventas.forEach(v=>{ porPago[v.pago]=(porPago[v.pago]||0)+1; });
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>mute. Estadísticas</title>
+    <style>body{font-family:'Helvetica Neue',sans-serif;padding:32px;color:#1a1a1a}h1{font-size:22px;margin-bottom:4px}h2{font-size:15px;margin:24px 0 10px;border-bottom:2px solid #FFF200;padding-bottom:4px}p{font-size:12px;color:#888;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}th{background:#000;color:#FFF200;padding:8px 10px;text-align:left}td{padding:8px 10px;border-bottom:1px solid #f0f0ec}.kpi{display:inline-block;background:#f5f5f0;border-radius:8px;padding:12px 20px;margin:0 12px 12px 0;min-width:140px}.kpi-val{font-size:22px;font-weight:700}.kpi-lbl{font-size:11px;color:#888;text-transform:uppercase}</style>
+    </head><body>
+    <h1>mute. — Estadísticas</h1><p>Exportado el ${new Date().toLocaleDateString("es-VE")}</p>
+    <div>
+      <div class="kpi"><div class="kpi-val">${ventas.length}</div><div class="kpi-lbl">Ventas totales</div></div>
+      <div class="kpi"><div class="kpi-val">$${totalIngresos.toFixed(2)}</div><div class="kpi-lbl">Ingresos</div></div>
+      <div class="kpi"><div class="kpi-val">$${margen.toFixed(2)}</div><div class="kpi-lbl">Margen bruto</div></div>
+    </div>
+    <h2>Ventas por modelo</h2>
+    <table><thead><tr><th>Modelo</th><th>Vendidas</th></tr></thead><tbody>
+    ${porModelo.map(m=>`<tr><td>${m.nombre}</td><td>${m.v}</td></tr>`).join("")}
+    </tbody></table>
+    <h2>Formas de pago</h2>
+    <table><thead><tr><th>Método</th><th>Ventas</th></tr></thead><tbody>
+    ${Object.entries(porPago).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join("")}
+    </tbody></table>
+    </body></html>`;
+    const w = window.open("","_blank");
+    if(w){w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),400);}
+  }
   const ventasPorVendedora = ["Cori","Adri"].map((v)=>({ name:v, count:ventas.filter((x)=>x.vendedora===v).length, ingresos:ventas.filter((x)=>x.vendedora===v).reduce((s,x)=>s+x.monto,0) }));
 
   const ventasPorMes = useMemo(()=>{
@@ -38,6 +85,10 @@ export default function TabEstadisticas({ st, fmt, inventory, ventas, disponible
 
   return (
     <div>
+      <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginBottom:16 }}>
+        <button style={st.btnSm()} onClick={exportEstadisticasExcel}>📊 Exportar Excel</button>
+        <button style={st.btnSm()} onClick={exportEstadisticasPDF}>📄 Exportar PDF</button>
+      </div>
       <div style={st.statsRow}>
         <div style={{ ...st.statCard, borderTop:"3px solid #FFF200" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
