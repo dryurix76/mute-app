@@ -19,6 +19,19 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
   const [showSugerencias, setShowSugerencias] = useState(false);
   const [seleccionados, setSeleccionados] = useState(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [guardandoId, setGuardandoId] = useState(null);
+  const [guardadoId, setGuardadoId] = useState(null);
+
+  async function handleUbicacion(id, valor) {
+    setGuardandoId(id);
+    try {
+      await onUpdateField(id, "ubicacion", valor);
+      setGuardadoId(id);
+      setTimeout(() => setGuardadoId(null), 2000);
+    } finally {
+      setGuardandoId(null);
+    }
+  }
 
   const filteredInv = useMemo(()=>inventory.filter((i)=>{
     if(filterModelo!=="all"&&i.modelo!==filterModelo)return false;
@@ -202,13 +215,18 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
                     <td style={st.td}><strong>{i.talla}</strong></td>
                     <td style={st.td}>{i.drop||"DROP 001"}</td>
                     <td style={st.td}>
-                      <select
-                        value={i.ubicacion||"Casa"}
-                        onChange={e => onUpdateField(i.id, "ubicacion", e.target.value)}
-                        style={{ fontSize:11, padding:"3px 8px", borderRadius:6, border:"1px solid #ddd", background:"#f9f9f6", cursor:"pointer" }}>
-                        <option value="Casa">🏠 Casa</option>
-                        <option value="Oficina">🏢 Oficina</option>
-                      </select>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <select
+                          value={i.ubicacion||"Casa"}
+                          disabled={guardandoId===i.id}
+                          onChange={e => handleUbicacion(i.id, e.target.value)}
+                          style={{ fontSize:11, padding:"3px 8px", borderRadius:6, border:`1px solid ${guardadoId===i.id?"#6BCB77":"#ddd"}`, background:guardadoId===i.id?"#f0fdf4":"#f9f9f6", cursor:"pointer", transition:"border-color .3s, background .3s" }}>
+                          <option value="Casa">🏠 Casa</option>
+                          <option value="Oficina">🏢 Oficina</option>
+                        </select>
+                        {guardandoId===i.id && <span style={{ fontSize:10, color:"#888" }}>...</span>}
+                        {guardadoId===i.id && <span style={{ fontSize:11, color:"#6BCB77", fontWeight:700 }}>✓</span>}
+                      </div>
                     </td>
                     <td style={st.td}><span style={st.badge(sold)}>{sold?"NO DISPONIBLE":"DISPONIBLE"}</span></td>
                     <td style={st.td}>{fmt(i.precio_costo)}</td>
