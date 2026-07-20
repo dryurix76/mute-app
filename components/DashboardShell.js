@@ -7,6 +7,7 @@ import { getPerfiles } from "../lib/authApi";
 import {
   crearPrendaInventario,
   actualizarPrendaInventario,
+  actualizarCampoInventario,
   borrarPrendaInventario,
 } from "../lib/inventarioApi";
 import {
@@ -281,6 +282,15 @@ export default function DashboardShell({
   function openEditVenta(v) { setEditId(v.id); setShowForm(true); }
   function openNewInv() { setEditInvId(null); setShowInvForm(true); }
   function openEditInv(i) { setEditInvId(i.id); setShowInvForm(true); }
+
+  async function handleUpdateInvField(id, field, value) {
+    try {
+      await actualizarCampoInventario(id, field, value);
+      setInventory(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
+    } catch (e) {
+      console.error("Error actualizando campo:", e);
+    }
+  }
   function openNewGasto() { setEditGastoId(null); setShowGastoForm(true); }
   function openEditGasto(g) { setEditGastoId(g.id); setShowGastoForm(true); }
 
@@ -406,7 +416,7 @@ export default function DashboardShell({
 
           {tab === "dashboard" && <TabDashboard {...sharedProps} />}
           {tab === "inventario" && (
-            <TabInventario {...sharedProps} onNew={openNewInv} onEdit={openEditInv} onDelete={(i) => setConfirmDelete({ type: "inventario", id: i.id, label: "\u00bfEliminar esta prenda del inventario?" })} />
+            <TabInventario {...sharedProps} onNew={openNewInv} onEdit={openEditInv} onUpdateField={handleUpdateInvField} onDelete={(i) => setConfirmDelete({ type: "inventario", id: i.id, label: "\u00bfEliminar esta prenda del inventario?" })} />
           )}
           {tab === "ventas" && (
             <TabVentas {...sharedProps} onEdit={openEditVenta} onDelete={(v) => setConfirmDelete({ type: "venta", id: v.id, label: "\u00bfEliminar esta venta?" })} />

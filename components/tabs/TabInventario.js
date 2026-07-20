@@ -6,7 +6,7 @@ import { G1, G2, MODELOS, TALLAS, PAGE_SIZES } from "../../lib/constants";
 
 const MODELO_COLORS = { cosmopolitan:"#FFF200", espressomartini:"#4D96FF", cubalibre:"#FF6B6B", negroni:"#B983FF", moscowmule:"#6BCB77" };
 
-export default function TabInventario({ st, fmt, inventory, vendidas, disponibles, onNew, onEdit, onDelete }) {
+export default function TabInventario({ st, fmt, inventory, vendidas, disponibles, onNew, onEdit, onUpdateField, onDelete }) {
   const [filterModelo, setFilterModelo] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterTalla, setFilterTalla] = useState("all");
@@ -202,9 +202,10 @@ export default function TabInventario({ st, fmt, inventory, vendidas, disponible
                     <td style={st.td}><strong>{i.talla}</strong></td>
                     <td style={st.td}>{i.drop||"DROP 001"}</td>
                     <td style={st.td}>
-                      <select value={i.ubicacion||"Casa"}
-                        onChange={e => onEdit({...i, ubicacion: e.target.value})}
-                        style={{ fontSize:11, padding:"2px 6px", borderRadius:4, border:"1px solid #ddd", background:"#f9f9f6", cursor:"pointer" }}>
+                      <select
+                        value={i.ubicacion||"Casa"}
+                        onChange={e => onUpdateField(i.id, "ubicacion", e.target.value)}
+                        style={{ fontSize:11, padding:"3px 8px", borderRadius:6, border:"1px solid #ddd", background:"#f9f9f6", cursor:"pointer" }}>
                         <option value="Casa">🏠 Casa</option>
                         <option value="Oficina">🏢 Oficina</option>
                       </select>
